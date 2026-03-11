@@ -5,6 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "start:repair": "npm run rebuild:native && electron .",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3",
+    "postinstall": "npm run rebuild:native",
     "dev": "tailwindcss -i ./assets/css/input.css -o ./assets/css/style.css --watch"
   },
   "keywords": [],
@@ -23,7 +26,7 @@
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
     "@tailwindcss/cli": "^4.2.1",
-    "electron": "^41.0.0",
+    "electron": "^34.0.0",
     "tailwindcss": "^4.2.1"
   }
 }
