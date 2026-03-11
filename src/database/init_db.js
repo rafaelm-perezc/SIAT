@@ -3,29 +3,45 @@ const bcrypt = require('bcryptjs');
 const { app } = require('electron');
 
 function inicializarBaseDeDatos() {
-    console.log("=== Sincronizando Base de Datos de SIAT ===");
+    console.log("=== Sincronizando Base de Datos (Seguridad, Mayúsculas y Fechas) ===");
 
-    // 1. Creación de tablas limpias (Sin restricciones de cargos específicas)
     db.exec(`
-        -- Usuarios del Sistema: Flexibilidad total de roles
-        CREATE TABLE IF NOT EXISTS usuarios (
+        CREATE TABLE IF NOT EXISTS cargos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre_completo TEXT NOT NULL,
-            usuario TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            rol TEXT NOT NULL, -- Eliminado el CHECK para permitir cualquier cargo
-            firma_path TEXT, 
-            activo INTEGER DEFAULT 1
+            nombre TEXT NOT NULL UNIQUE,
+            descripcion TEXT
         );
 
-        -- Personal Operativo: Con control de fin de contrato
         CREATE TABLE IF NOT EXISTS empleados (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             documento TEXT UNIQUE NOT NULL,
-            nombres TEXT NOT NULL,
-            apellidos TEXT NOT NULL,
-            fecha_fin_contrato DATE NOT NULL,
-            activo INTEGER DEFAULT 1
+            primer_nombre TEXT NOT NULL,
+            segundo_nombre TEXT,
+            primer_apellido TEXT NOT NULL,
+            segundo_apellido TEXT,
+            celular TEXT NOT NULL,
+            contacto_emergencia_nombre TEXT NOT NULL,
+            contacto_emergencia_celular TEXT NOT NULL,
+            eps TEXT NOT NULL,
+            tipo_sangre TEXT NOT NULL,
+            cargo_id INTEGER NOT NULL,
+            fecha_inicio_contrato DATE NOT NULL, -- NUEVO
+            fecha_inicio_labores DATE NOT NULL,  -- NUEVO
+            fecha_fin_contrato DATE,             -- ACTUALIZADO: Ahora permite nulos (indefinido)
+            activo INTEGER DEFAULT 1,
+            FOREIGN KEY (cargo_id) REFERENCES cargos (id) ON DELETE RESTRICT
+        );
+
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            empleado_id INTEGER NOT NULL UNIQUE, 
+            usuario TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            rol TEXT NOT NULL, 
+            firma_path TEXT, 
+            debe_cambiar_password INTEGER DEFAULT 1, 
+            activo INTEGER DEFAULT 1,
+            FOREIGN KEY (empleado_id) REFERENCES empleados (id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS zonas (
@@ -42,7 +58,6 @@ function inicializarBaseDeDatos() {
             horas_totales REAL NOT NULL
         );
 
-        -- El núcleo legal: 44h vs 42h (Ley 2101)
         CREATE TABLE IF NOT EXISTS reglas_jornada (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             fecha_inicio DATE NOT NULL,
@@ -52,41 +67,54 @@ function inicializarBaseDeDatos() {
         );
     `);
 
-    // 2. Gestión del Super Usuario Inicial
-    const adminUser = 'admin';
-    const adminPass = 'Siat2026*';
+    // Insertar Cargos
+    const stmtCheckCargos = db.prepare('SELECT count(*) as count FROM cargos');
+    if (stmtCheckCargos.get().count === 0) {
+        const insertCargo = db.prepare('INSERT INTO cargos (nombre) VALUES (?)');
+        ['GERENTE', 'JEFE OPERATIVO', 'SECRETARIA', 'CONDUCTOR', 'TAQUILLERO', 'AUXILIAR DE PLATAFORMA', 'ADMINISTRADOR DEL SISTEMA'].forEach(c => insertCargo.run(c));
+    }
 
+    // Insertar Super Usuario
+    const adminDocUserPass = '000000000';
     const stmtCheckUser = db.prepare('SELECT count(*) as count FROM usuarios WHERE usuario = ?');
-    if (stmtCheckUser.get(adminUser).count === 0) {
-        const salt = bcrypt.genSaltSync(10);
-        const hashPassword = bcrypt.hashSync(adminPass, salt);
+    
+    if (stmtCheckUser.get(adminDocUserPass).count === 0) {
+        const cargoAdmin = db.prepare("SELECT id FROM cargos WHERE nombre = 'ADMINISTRADOR DEL SISTEMA'").get();
 
-        const stmtInsertUser = db.prepare(`
-            INSERT INTO usuarios (nombre_completo, usuario, password, rol) 
-            VALUES (?, ?, ?, ?)
+        const insertEmpleado = db.prepare(`
+            INSERT INTO empleados (
+                documento, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, 
+                celular, contacto_emergencia_nombre, contacto_emergencia_celular, 
+                eps, tipo_sangre, cargo_id, fecha_inicio_contrato, fecha_inicio_labores, fecha_fin_contrato
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        stmtInsertUser.run('Administrador del Sistema', adminUser, hashPassword, 'Super Usuario');
+        // Fecha fin en NULL (Indefinido)
+        const infoEmpleado = insertEmpleado.run(
+            adminDocUserPass, 'SUPER', '', 'USUARIO', '', '0000000000', 'N/A', '0000000000', 
+            'N/A', 'O+', cargoAdmin.id, '2024-01-01', '2024-01-01', null
+        );
 
-        // Muestra credenciales en consola SOLO si estamos en modo desarrollo
+        const salt = bcrypt.genSaltSync(10);
+        const hashPassword = bcrypt.hashSync(adminDocUserPass, salt);
+        
+        db.prepare('INSERT INTO usuarios (empleado_id, usuario, password, rol, debe_cambiar_password) VALUES (?, ?, ?, ?, ?)').run(
+            infoEmpleado.lastInsertRowid, adminDocUserPass, hashPassword, 'SUPER USUARIO', 1
+        );
+
         if (!app.isPackaged) {
-            console.log("\x1b[33m%s\x1b[0m", "------------------------------------------------");
-            console.log("\x1b[33m%s\x1b[0m", "SIAT - ACCESO INICIAL DE DESARROLLO");
-            console.log("\x1b[32m%s\x1b[0m", `USUARIO: ${adminUser}`);
-            console.log("\x1b[32m%s\x1b[0m", `CLAVE:   ${adminPass}`);
-            console.log("\x1b[33m%s\x1b[0m", "------------------------------------------------");
+            console.log("\x1b[33m%s\x1b[0m", `ACCESO DESARROLLO -> USUARIO: ${adminDocUserPass} | CLAVE: ${adminDocUserPass}`);
         }
     }
 
-    // 3. Reglas de la Ley 2101 (Se mantienen por ser el corazón del motor de turnos)
+    // Reglas Ley 2101
     const stmtCheckReglas = db.prepare('SELECT count(*) as count FROM reglas_jornada');
     if (stmtCheckReglas.get().count === 0) {
         const stmtInsertRegla = db.prepare('INSERT INTO reglas_jornada (fecha_inicio, fecha_fin, horas_semanales, descripcion) VALUES (?, ?, ?, ?)');
-        stmtInsertRegla.run('2024-07-16', '2026-07-14', 44, 'Jornada 44h');
-        stmtInsertRegla.run('2026-07-15', null, 42, 'Jornada 42h');
+        stmtInsertRegla.run('2024-07-16', '2026-07-14', 44, 'JORNADA 44H');
+        stmtInsertRegla.run('2026-07-15', null, 42, 'JORNADA 42H');
     }
 
     console.log("=== SIAT: Base de datos lista para operar ===");
 }
 
-// Exportamos el módulo para que main.js lo ejecute cuando Electron esté listo
 module.exports = inicializarBaseDeDatos;

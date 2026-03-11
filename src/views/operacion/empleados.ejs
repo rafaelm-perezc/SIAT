@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>SIAT - Personal Operativo</title>
+    <%- include('../partials/head') %>
+    <script src="../../../assets/js/operacion/empleados.js" defer></script>
+</head>
+<body class="bg-terminal-black flex h-screen overflow-hidden text-terminal-gray font-sans">
+
+    <%- include('../partials/sidebar') %>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <%- include('../partials/header') %>
+
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Directorio de Personal</h2>
+                    <p class="text-sm text-gray-400">Gestión de operarios y carga masiva</p>
+                </div>
+                <div class="flex gap-4">
+                    <button id="btnModalExcel" class="px-5 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all shadow-lg flex items-center gap-2">
+                        <span>📊</span> Carga Masiva
+                    </button>
+                    <button class="px-5 py-2.5 bg-terminal-yellow text-black font-bold rounded-lg opacity-50 cursor-not-allowed flex items-center gap-2" title="Habilitaremos el manual tras probar el Excel">
+                        <span>➕</span> Registro Manual
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-terminal-darkgray rounded-xl border border-gray-800 overflow-hidden shadow-2xl">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-black text-terminal-yellow border-b border-gray-700 text-sm">
+                            <th class="p-4 font-semibold uppercase tracking-wider">Documento</th>
+                            <th class="p-4 font-semibold uppercase tracking-wider">Apellidos y Nombres</th>
+                            <th class="p-4 font-semibold uppercase tracking-wider">Cargo</th>
+                            <th class="p-4 font-semibold uppercase tracking-wider text-center">Contrato</th>
+                            <th class="p-4 font-semibold uppercase tracking-wider text-center">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaEmpleados" class="divide-y divide-gray-800 text-sm text-gray-300">
+                        <tr><td colspan="5" class="p-8 text-center text-gray-500 italic">Cargando datos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="modalExcel" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center z-50">
+        <div class="bg-terminal-darkgray w-full max-w-md p-8 rounded-2xl border border-gray-700 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-2">Importar Personal</h3>
+            <p class="text-xs text-gray-400 mb-6">Usa la plantilla oficial para garantizar que los cargos y tipos de sangre sean válidos. Fecha de fin de contrato puede ir vacía si es indefinido.</p>
+            
+            <form id="formExcel" class="space-y-4">
+                
+                <div class="flex justify-end mb-2">
+                    <button type="button" id="btnDescargarPlantilla" class="text-sm text-blue-400 hover:text-blue-300 font-semibold underline flex items-center gap-1 transition-colors">
+                        <span>⬇️</span> Descargar Plantilla Oficial
+                    </button>
+                </div>
+
+                <div class="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-terminal-yellow transition-colors">
+                    <input type="file" id="archivoExcel" accept=".xlsx, .xls" required class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-terminal-yellow file:text-black hover:file:bg-yellow-500 cursor-pointer">
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="button" id="btnCerrarExcel" class="w-1/2 py-2 bg-gray-700 text-white font-bold rounded hover:bg-gray-600 transition-colors">Cancelar</button>
+                    <button type="submit" class="w-1/2 py-2 bg-green-600 text-white font-bold rounded hover:bg-green-500 transition-colors">Procesar Archivo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

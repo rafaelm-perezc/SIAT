@@ -2,8 +2,10 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const ejsElectron = require('ejs-electron');
 
+// Controladores y Base de Datos
 const inicializarBD = require('./src/database/init_db');
 const authController = require('./src/controllers/authController');
+const empleadoController = require('./src/controllers/empleadoController'); 
 
 let mainWindow;
 
@@ -52,16 +54,42 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-// --- CANALES IPC ---
+// ==========================================
+// --- CANALES DE COMUNICACIÓN IPC ---
+// ==========================================
+
 ipcMain.handle('ping', () => '¡Conexión segura establecida!');
 
+// --- AUTENTICACIÓN Y SEGURIDAD ---
 ipcMain.handle('auth:login', async (event, { user, pass }) => {
     const result = authController.login(user, pass);
     
-    if (result.success) {
+    // Si el login es exitoso y NO requiere cambio de contraseña, inyectamos el usuario global
+    if (result.success && !result.requirePasswordChange) {
         ejsElectron.data('currentUser', result.user);
         console.log(`Sesión iniciada: ${result.user.usuario} | Rol: ${result.user.rol}`);
     }
     
     return result;
+});
+
+ipcMain.handle('auth:cambiarPassword', async (event, { userId, oldPassword, newPassword }) => {
+    return authController.cambiarPassword(userId, oldPassword, newPassword);
+});
+
+ipcMain.handle('auth:resetPasswordAdmin', async (event, documento) => {
+    return authController.resetPasswordAdmin(documento);
+});
+
+// --- PERSONAL OPERATIVO ---
+ipcMain.handle('empleados:get', async () => {
+    return empleadoController.getAll();
+});
+
+ipcMain.handle('empleados:crear', async (event, datos) => {
+    return empleadoController.crear(datos);
+});
+
+ipcMain.handle('empleados:importarExcel', async (event, filePath) => {
+    return empleadoController.cargarExcel(filePath);
 });
