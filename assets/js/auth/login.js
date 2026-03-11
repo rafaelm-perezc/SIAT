@@ -1,148 +1,170 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // Referencias a los elementos del DOM
     const loginForm = document.getElementById('loginForm');
-    const changePasswordForm = document.getElementById('changePasswordForm');
-    const formSubtitle = document.getElementById('formSubtitle');
-    const btnCancelChange = document.getElementById('btnCancelChange');
+    const btnForgotPassword = document.getElementById('btnForgotPassword');
 
-    // Variables temporales para el proceso de cambio de clave
-    let tempUserId = null;
-    let tempOldPassword = null;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
-    // ==========================================
-    // 1. EVENTO DE INICIO DE SESIÓN
-    // ==========================================
+    const estilosSwal = {
+        confirmButtonColor: '#FACC15',
+        background: '#1F2937',
+        color: '#E2E8F0'
+    };
+
+    const solicitarCambioPasswordObligatorio = async (userId, oldPassword) => {
+        const result = await Swal.fire({
+            title: 'Cambio de Clave Requerido',
+            html: `
+                <div style="text-align:left; font-size:12px; margin-bottom:12px; border-left:4px solid #FACC15; padding-left:10px;">
+                    <strong style="display:block; margin-bottom:6px;">Reglas de seguridad:</strong>
+                    <ul style="padding-left:16px; margin:0; line-height:1.5;">
+                        <li>Mínimo 8 caracteres.</li>
+                        <li>Al menos 1 mayúscula y 1 minúscula.</li>
+                        <li>Al menos 1 número.</li>
+                        <li>Al menos 1 carácter especial (ej. @, *, #, _).</li>
+                    </ul>
+                </div>
+                <input type="password" id="swalNewPassword" class="swal2-input" placeholder="Nueva contraseña" autocomplete="new-password">
+                <input type="password" id="swalConfirmPassword" class="swal2-input" placeholder="Confirmar contraseña" autocomplete="new-password">
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            confirmButtonText: 'Actualizar y entrar',
+            ...estilosSwal,
+            preConfirm: async () => {
+                const newPass = document.getElementById('swalNewPassword').value;
+                const confirmPass = document.getElementById('swalConfirmPassword').value;
+
+                if (!newPass || !confirmPass) {
+                    Swal.showValidationMessage('Debes completar ambos campos de contraseña.');
+                    return false;
+                }
+
+                if (newPass !== confirmPass) {
+                    Swal.showValidationMessage('Las contraseñas no coinciden.');
+                    return false;
+                }
+
+                if (!passwordRegex.test(newPass)) {
+                    Swal.showValidationMessage('La nueva contraseña no cumple las reglas de seguridad.');
+                    return false;
+                }
+
+                const cambio = await window.api.cambiarPassword({
+                    userId,
+                    oldPassword,
+                    newPassword: newPass
+                });
+
+                if (!cambio.success) {
+                    Swal.showValidationMessage(cambio.message || 'No se pudo actualizar la contraseña.');
+                    return false;
+                }
+
+                return true;
+            }
+        });
+
+        if (result.isConfirmed) {
+            await Swal.fire({
+                icon: 'success',
+                title: '¡Actualización Exitosa!',
+                text: 'Tu contraseña ha sido guardada. Inicia sesión nuevamente con tu nueva clave.',
+                ...estilosSwal
+            });
+            window.location.reload();
+        }
+    };
+
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const user = document.getElementById('usuario').value;
         const pass = document.getElementById('password').value;
 
-        const payload = { user, pass };
-
         try {
-            const resultado = await window.api.authLogin(payload);
+            const resultado = await window.api.authLogin({ user, pass });
 
-            if (resultado.success) {
-                
-                // INTERCEPTOR DE SEGURIDAD: ¿Debe cambiar la contraseña?
-                if (resultado.requirePasswordChange) {
-                    
-                    // Guardamos los datos temporalmente
-                    tempUserId = resultado.user.id;
-                    tempOldPassword = pass;
-
-                    // Cambiamos la interfaz
-                    loginForm.classList.add('hidden');
-                    loginForm.classList.remove('block');
-                    
-                    changePasswordForm.classList.remove('hidden');
-                    changePasswordForm.classList.add('block');
-                    
-                    formSubtitle.innerText = 'Actualización de Seguridad Requerida';
-                    formSubtitle.classList.replace('text-gray-400', 'text-terminal-yellow');
-
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Cambio de Clave Requerido',
-                        text: 'Por normativas de seguridad, debes establecer una contraseña personal antes de ingresar al sistema.',
-                        confirmButtonColor: '#FACC15',
-                        background: '#1F2937', color: '#E2E8F0'
-                    });
-
-                } else {
-                    // Acceso Normal Permitido
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Bienvenido!',
-                        text: `Hola, ${resultado.user.nombre_completo}`,
-                        timer: 1500,
-                        showConfirmButton: false,
-                        background: '#1F2937', color: '#E2E8F0'
-                    }).then(() => {
-                        window.location.href = '../dashboard/index.ejs'; 
-                    });
-                }
-            } else {
-                Swal.fire({
+            if (!resultado.success) {
+                return Swal.fire({
                     icon: 'error',
                     title: 'Acceso Denegado',
                     text: resultado.message,
-                    confirmButtonColor: '#FACC15',
-                    background: '#1F2937', color: '#E2E8F0'
+                    ...estilosSwal
                 });
             }
+
+            if (resultado.requirePasswordChange) {
+                await solicitarCambioPasswordObligatorio(resultado.user.id, pass);
+                return;
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: '¡Bienvenido!',
+                text: `Hola, ${resultado.user.nombre_completo}`,
+                timer: 1500,
+                showConfirmButton: false,
+                ...estilosSwal
+            }).then(() => {
+                window.location.href = '../dashboard/index.ejs';
+            });
+
         } catch (error) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error de Comunicación',
                 text: 'No se pudo contactar con el motor del SIAT.',
-                background: '#1F2937', color: '#E2E8F0'
+                ...estilosSwal
             });
             console.error(error);
         }
     });
 
-    // ==========================================
-    // 2. EVENTO DE CAMBIO DE CONTRASEÑA
-    // ==========================================
-    changePasswordForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    btnForgotPassword.addEventListener('click', async () => {
+        const { value: documento } = await Swal.fire({
+            title: 'Restablecer contraseña',
+            input: 'text',
+            inputLabel: 'Número de documento',
+            inputPlaceholder: 'Ingresa tu documento de identidad',
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            confirmButtonText: 'Restablecer',
+            ...estilosSwal,
+            inputValidator: (value) => {
+                if (!value || !value.trim()) return 'Debes ingresar un número de documento.';
+                return null;
+            }
+        });
 
-        const newPass = document.getElementById('newPassword').value;
-        const confirmPass = document.getElementById('confirmPassword').value;
-
-        // Validación en frontend de contraseñas iguales
-        if (newPass !== confirmPass) {
-            return Swal.fire({
-                icon: 'warning',
-                title: 'Atención',
-                text: 'Las contraseñas no coinciden. Por favor, verifica.',
-                confirmButtonColor: '#FACC15',
-                background: '#1F2937', color: '#E2E8F0'
-            });
-        }
+        if (!documento) return;
 
         try {
-            // Llamamos al canal seguro de cambio de contraseña
-            const result = await window.api.cambiarPassword({ 
-                userId: tempUserId, 
-                oldPassword: tempOldPassword, 
-                newPassword: newPass 
-            });
+            const reset = await window.api.resetPassword(documento.trim());
 
-            if (result.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Actualización Exitosa!',
-                    text: 'Tu contraseña ha sido guardada. Por favor, inicia sesión con tus nuevas credenciales.',
-                    confirmButtonColor: '#FACC15',
-                    background: '#1F2937', color: '#E2E8F0'
-                }).then(() => {
-                    // Refrescamos la página para volver al login normal
-                    window.location.reload(); 
-                });
-            } else {
-                Swal.fire({
+            if (!reset.success) {
+                return Swal.fire({
                     icon: 'error',
-                    title: 'Error de Seguridad',
-                    text: result.message,
-                    confirmButtonColor: '#FACC15',
-                    background: '#1F2937', color: '#E2E8F0'
+                    title: 'No se pudo restablecer',
+                    text: reset.message,
+                    ...estilosSwal
                 });
             }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Contraseña restablecida',
+                text: 'Tu contraseña temporal ahora es tu número de documento. Debes cambiarla al iniciar sesión.',
+                ...estilosSwal
+            });
         } catch (error) {
             console.error(error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Comunicación',
+                text: 'No se pudo procesar el restablecimiento de contraseña.',
+                ...estilosSwal
+            });
         }
     });
-
-    // ==========================================
-    // 3. EVENTO CANCELAR CAMBIO
-    // ==========================================
-    btnCancelChange.addEventListener('click', () => {
-        // Al cancelar, simplemente recargamos la vista
-        window.location.reload();
-    });
-
 });

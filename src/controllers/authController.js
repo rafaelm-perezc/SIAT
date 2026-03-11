@@ -81,24 +81,29 @@ const authController = {
         }
     },
 
-    // 3. Restablecimiento por parte del Administrador/Gerente
-    resetPasswordAdmin: (empleadoDocumento) => {
+    // 3. Restablecimiento por documento desde el login
+    resetPassword: (empleadoDocumento) => {
         try {
+            const documento = String(empleadoDocumento || '').trim();
+            if (!documento) {
+                return { success: false, message: 'Documento inválido' };
+            }
+
             const salt = bcrypt.genSaltSync(10);
             // La contraseña se restablece temporalmente al número de documento
-            const hashPassword = bcrypt.hashSync(empleadoDocumento, salt);
+            const hashPassword = bcrypt.hashSync(documento, salt);
 
             // Actualizamos la clave y forzamos el cambio para el próximo inicio
             const result = db.prepare(`
                 UPDATE usuarios 
                 SET password = ?, debe_cambiar_password = 1 
-                WHERE usuario = ?
-            `).run(hashPassword, empleadoDocumento);
+                WHERE usuario = ? AND activo = 1
+            `).run(hashPassword, documento);
 
             if (result.changes === 0) return { success: false, message: 'Usuario no encontrado' };
             return { success: true, message: 'Contraseña restablecida al número de documento del empleado.' };
         } catch (error) {
-            console.error('Error en resetPasswordAdmin:', error);
+            console.error('Error en resetPassword:', error);
             return { success: false, message: 'Error al restablecer la contraseña' };
         }
     }

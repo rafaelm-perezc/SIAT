@@ -33,42 +33,10 @@
                 class="w-full py-3 bg-terminal-yellow text-black font-bold rounded-lg hover:bg-yellow-500 transition-all transform hover:scale-[1.02] active:scale-95">
                 INGRESAR AL SISTEMA
             </button>
-        </form>
 
-        <form id="changePasswordForm" class="space-y-6 hidden">
-            
-            <div class="bg-gray-800 border-l-4 border-terminal-yellow p-4 rounded text-sm text-gray-300">
-                <p class="font-bold mb-1 text-white">Reglas de Seguridad:</p>
-                <ul class="list-disc pl-4 space-y-1 text-xs">
-                    <li>Mínimo 8 caracteres.</li>
-                    <li>Al menos 1 mayúscula y 1 minúscula.</li>
-                    <li>Al menos 1 número.</li>
-                    <li>Al menos 1 carácter especial (ej. @, *, #, _).</li>
-                </ul>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium mb-2 text-terminal-gray">Nueva Contraseña</label>
-                <input type="password" id="newPassword" required
-                    class="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:border-terminal-yellow text-white transition-colors">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium mb-2 text-terminal-gray">Confirmar Contraseña</label>
-                <input type="password" id="confirmPassword" required
-                    class="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:border-terminal-yellow text-white transition-colors">
-            </div>
-
-            <div class="flex gap-3">
-                <button type="button" id="btnCancelChange"
-                    class="w-1/3 py-3 bg-gray-700 text-white font-bold rounded-lg hover:bg-gray-600 transition-all">
-                    Cancelar
-                </button>
-                <button type="submit" 
-                    class="w-2/3 py-3 bg-terminal-yellow text-black font-bold rounded-lg hover:bg-yellow-500 transition-all transform hover:scale-[1.02] active:scale-95">
-                    ACTUALIZAR Y ENTRAR
-                </button>
-            </div>
+            <button type="button" id="btnForgotPassword" class="w-full text-sm text-gray-400 underline hover:text-terminal-yellow transition-colors">
+                ¿Olvidaste tu contraseña?
+            </button>
         </form>
 
     </div>

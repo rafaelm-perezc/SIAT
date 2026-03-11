@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('api', {
     // Recibe un objeto { userId, oldPassword, newPassword }
     cambiarPassword: (datos) => ipcRenderer.invoke('auth:cambiarPassword', datos),
     // Recibe el número de documento como string
-    resetPasswordAdmin: (documento) => ipcRenderer.invoke('auth:resetPasswordAdmin', documento),
+    resetPassword: (documento) => ipcRenderer.invoke('auth:resetPassword', documento),
     
     // --- MÓDULO 4: Personal Operativo ---
     getEmpleados: () => ipcRenderer.invoke('empleados:get'),

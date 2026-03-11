@@ -77,8 +77,8 @@ ipcMain.handle('auth:cambiarPassword', async (event, { userId, oldPassword, newP
     return authController.cambiarPassword(userId, oldPassword, newPassword);
 });
 
-ipcMain.handle('auth:resetPasswordAdmin', async (event, documento) => {
-    return authController.resetPasswordAdmin(documento);
+ipcMain.handle('auth:resetPassword', async (event, documento) => {
+    return authController.resetPassword(documento);
 });
 
 // --- PERSONAL OPERATIVO ---
