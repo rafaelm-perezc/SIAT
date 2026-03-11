@@ -2,6 +2,9 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const ejsElectron = require('ejs-electron');
 
+const inicializarBD = require('./src/database/init_db');
+const authController = require('./src/controllers/authController');
+
 let mainWindow;
 
 function createWindow() {
@@ -10,19 +13,19 @@ function createWindow() {
         height: 800,
         minWidth: 1024,
         minHeight: 768,
-        show: false, // Ocultamos hasta que cargue para evitar parpadeos blancos
+        show: false,
+        icon: path.join(__dirname, 'assets', 'img', 'logo.png'),
         webPreferences: {
-            nodeIntegration: false, // Seguridad estricta
-            contextIsolation: true, // Aislamiento del frontend
-            preload: path.join(__dirname, 'preload.js') // El puente IPC
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js')
         }
     });
 
-    // Podemos pasar variables globales desde Node.js a EJS así:
     ejsElectron.data('appVersion', app.getVersion());
+    ejsElectron.data('currentUser', null); 
 
-    // Cargamos la vista inicial (crearemos este index.ejs en el paso 4)
-    mainWindow.loadFile(path.join(__dirname, 'src', 'views', 'index.ejs'));
+    mainWindow.loadFile(path.join(__dirname, 'src', 'views', 'auth', 'login.ejs'));
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
@@ -31,6 +34,13 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+    try {
+        inicializarBD();
+        console.log("SIAT: Base de datos sincronizada.");
+    } catch (err) {
+        console.error("SIAT ERROR (DB):", err);
+    }
+
     createWindow();
 
     app.on('activate', () => {
@@ -42,5 +52,16 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
 });
 
-// --- Canales IPC (Backend) ---
-ipcMain.handle('ping', () => '¡Conexión segura con Node.js y EJS establecida exitosamente!');
+// --- CANALES IPC ---
+ipcMain.handle('ping', () => '¡Conexión segura establecida!');
+
+ipcMain.handle('auth:login', async (event, { user, pass }) => {
+    const result = authController.login(user, pass);
+    
+    if (result.success) {
+        ejsElectron.data('currentUser', result.user);
+        console.log(`Sesión iniciada: ${result.user.usuario} | Rol: ${result.user.rol}`);
+    }
+    
+    return result;
+});
