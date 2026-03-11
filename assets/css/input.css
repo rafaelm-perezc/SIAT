@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* Definimos la paleta corporativa de la Terminal de La Plata */
+@theme {
+  --color-terminal-yellow: #FACC15; /* Amarillo principal */
+  --color-terminal-black: #111111;  /* Fondo oscuro */
+  --color-terminal-gray: #E2E8F0;   /* Gris plata para textos */
+  --color-terminal-darkgray: #1F2937; /* Gris oscuro para tarjetas/paneles */
+}
+
+/* Le indicamos a Tailwind v4 que escanee nuestros archivos EJS y JS */
+@source "../../src/views/**/*.ejs";
+@source "../../assets/js/**/*.js";
+
+/* Estilos base por defecto para toda la app */
+body {
+    @apply bg-terminal-black text-terminal-gray font-sans;
+}
