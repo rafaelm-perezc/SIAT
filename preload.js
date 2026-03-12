@@ -5,11 +5,8 @@ contextBridge.exposeInMainWorld('api', {
     ping: () => ipcRenderer.invoke('ping'),
     
     // --- AUTENTICACIÓN Y SEGURIDAD ---
-    // Recibe estrictamente un objeto con las credenciales { user, pass }
     authLogin: (credentials) => ipcRenderer.invoke('auth:login', credentials),
-    // Recibe un objeto { userId, oldPassword, newPassword }
     cambiarPassword: (datos) => ipcRenderer.invoke('auth:cambiarPassword', datos),
-    // Recibe el número de documento como string
     resetPassword: (documento) => ipcRenderer.invoke('auth:resetPassword', documento),
     
     // --- MÓDULO 4: Personal Operativo ---
@@ -18,5 +15,18 @@ contextBridge.exposeInMainWorld('api', {
     actualizarEmpleado: (datos) => ipcRenderer.invoke('empleados:actualizar', datos),
     getCargos: () => ipcRenderer.invoke('cargos:get'),
     descargarPlantilla: () => ipcRenderer.invoke('empleados:descargarPlantilla'),
-    importarEmpleadosExcel: (filePath) => ipcRenderer.invoke('empleados:importarExcel', filePath)
+    importarEmpleadosExcel: (filePath) => ipcRenderer.invoke('empleados:importarExcel', filePath),
+
+    // --- MÓDULO 5: Configuración (CRUD Cargos) ---
+    getAllCargos: () => ipcRenderer.invoke('cargos:getAll'),
+    crearCargo: (datos) => ipcRenderer.invoke('cargos:crear', datos),
+    actualizarCargo: (datos) => ipcRenderer.invoke('cargos:actualizar', datos),
+    eliminarCargo: (id) => ipcRenderer.invoke('cargos:eliminar', id),
+
+    // --- MÓDULO 5: Configuración (CRUD Usuarios) ---
+    getAllUsuarios: () => ipcRenderer.invoke('usuarios:getAll'),
+    getEmpleadosSinUsuario: () => ipcRenderer.invoke('usuarios:getSinUsuario'),
+    crearUsuario: (datos) => ipcRenderer.invoke('usuarios:crear', datos),
+    toggleUsuarioActivo: (id) => ipcRenderer.invoke('usuarios:toggleActivo', id),
+    resetPasswordUsuario: (id) => ipcRenderer.invoke('usuarios:resetPassword', id)
 });
