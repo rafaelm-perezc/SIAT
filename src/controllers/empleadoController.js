@@ -4,6 +4,40 @@ const ExcelJS = require('exceljs');
 
 const upper = (str) => str ? String(str).toUpperCase().trim() : '';
 
+// [NUEVO BLOQUE]: Traductor Inteligente de Fechas de Excel a SQLite (YYYY-MM-DD)
+const parseExcelDate = (excelValue) => {
+    if (!excelValue) return null;
+
+    // 1. Si Excel lo entrega como Número Serial (Ej. 46082)
+    if (typeof excelValue === 'number') {
+        // 25569 es la diferencia de días entre el 1 de Enero de 1900 (Excel) y el 1 de Enero de 1970 (JavaScript)
+        const fechaUnix = new Date((excelValue - 25569) * 86400 * 1000);
+        // Extraemos usando UTC para evitar que el cambio de zona horaria nos quite 1 día
+        const anio = fechaUnix.getUTCFullYear();
+        const mes = String(fechaUnix.getUTCMonth() + 1).padStart(2, '0');
+        const dia = String(fechaUnix.getUTCDate()).padStart(2, '0');
+        return `${anio}-${mes}-${dia}`;
+    }
+
+    // 2. Si el usuario lo escribió como Texto (DD/MM/YYYY o YYYY-MM-DD)
+    if (typeof excelValue === 'string') {
+        const partes = excelValue.includes('/') ? excelValue.split('/') : excelValue.split('-');
+        if (partes.length === 3) {
+            // Si el año está de último (DD/MM/YYYY)
+            if (partes[2].length === 4) { 
+                return `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+            } 
+            // Si el año está de primero (YYYY/MM/DD)
+            else if (partes[0].length === 4) { 
+                return `${partes[0]}-${partes[1].padStart(2, '0')}-${partes[2].padStart(2, '0')}`;
+            }
+        }
+        return excelValue; // Retorno de seguridad si tiene otro formato raro
+    }
+
+    return null;
+};
+
 const empleadoController = {
     getCargos: () => {
         try {
@@ -97,7 +131,6 @@ const empleadoController = {
             const ws = workbook.addWorksheet('Plantilla_Empleados');
             const hiddenWs = workbook.addWorksheet('DataOculta', { state: 'hidden' });
 
-            // Corrección: Permite exportar aunque no haya cargos
             const nombresCargos = cargos.length > 0 ? cargos.map(c => c.nombre) : ['AGREGA_CARGOS_EN_SISTEMA'];
             const tiposSangre = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
@@ -139,8 +172,13 @@ const empleadoController = {
 
     cargarExcel: (filePath) => {
         try {
+            if (typeof filePath !== 'string' || filePath.trim() === '') {
+                return { success: false, message: 'RUTA DE ARCHIVO INVÁLIDA. SELECCIONA UN EXCEL VÁLIDO.' };
+            }
+
             const workbook = xlsx.readFile(filePath);
             const sheetName = workbook.SheetNames[0];
+            // Extraer JSON en crudo (manteniendo el serial de Excel)
             const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
             if (data.length === 0) return { success: false, message: 'EL ARCHIVO EXCEL ESTÁ VACÍO.' };
@@ -184,9 +222,10 @@ const empleadoController = {
                             }
                         }
 
-                        const fechaInicioContrato = String(emp.Fecha_Inicio_Contrato);
-                        const fechaInicioLabores = emp.Fecha_Inicio_Labores ? String(emp.Fecha_Inicio_Labores) : fechaInicioContrato;
-                        const fechaFinContrato = emp.Fecha_Fin_Contrato ? String(emp.Fecha_Fin_Contrato) : null;
+                        // [EVOLUCIÓN]: Usamos el traductor de fechas antes de inyectarlo en SQLite
+                        const fechaInicioContrato = parseExcelDate(emp.Fecha_Inicio_Contrato);
+                        const fechaInicioLabores = emp.Fecha_Inicio_Labores ? parseExcelDate(emp.Fecha_Inicio_Labores) : fechaInicioContrato;
+                        const fechaFinContrato = emp.Fecha_Fin_Contrato ? parseExcelDate(emp.Fecha_Fin_Contrato) : null;
 
                         stmtInsertEmpleado.run(
                             upper(emp.Documento), upper(emp.Primer_Nombre), upper(emp.Segundo_Nombre),

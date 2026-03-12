@@ -8,11 +8,14 @@ contextBridge.exposeInMainWorld('api', {
     
     getDashboardStats: () => ipcRenderer.invoke('dashboard:getStats'),
     
+    // --- PERSONAL OPERATIVO ---
     getEmpleados: () => ipcRenderer.invoke('empleados:get'),
     crearEmpleado: (datos) => ipcRenderer.invoke('empleados:crear', datos),
     actualizarEmpleado: (datos) => ipcRenderer.invoke('empleados:actualizar', datos),
     getCargos: () => ipcRenderer.invoke('cargos:get'),
     descargarPlantilla: () => ipcRenderer.invoke('empleados:descargarPlantilla'),
+    // [NUEVO BLOQUE]: Exposición del método para llamar al explorador de archivos nativo
+    seleccionarArchivoExcel: () => ipcRenderer.invoke('empleados:seleccionarExcel'),
     importarEmpleadosExcel: (filePath) => ipcRenderer.invoke('empleados:importarExcel', filePath),
 
     getAllZonas: () => ipcRenderer.invoke('zonas:getAll'),
@@ -29,7 +32,6 @@ contextBridge.exposeInMainWorld('api', {
     getProgramacionMatriz: (anio, mes) => ipcRenderer.invoke('programacion:getMatriz', { anio, mes }),
     guardarProgramacion: (datos) => ipcRenderer.invoke('programacion:guardar', datos),
     eliminarProgramacion: (id) => ipcRenderer.invoke('programacion:eliminar', id),
-    // [NUEVO BLOQUE]: Exposición de la función Auto-Generadora
     autoGenerarProgramacion: (anio, mes) => ipcRenderer.invoke('programacion:autoGenerar', { anio, mes }),
 
     getAllCargos: () => ipcRenderer.invoke('cargos:getAll'),

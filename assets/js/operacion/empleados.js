@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tipoContratoTexto = (fechaFin) => fechaFin || '<span class="italic text-gray-500">Indefinido</span>';
 
     const construirFormularioEmpleado = (cargos, empleado = {}) => {
-        // Corrección de Contraste para el Select:
         const cargoOptions = cargos
             .map(cargo => `<option value="${cargo.id}" style="background-color: #1F2937; color: white;" ${Number(empleado.cargo_id) === Number(cargo.id) ? 'selected' : ''}>${cargo.nombre}</option>`)
             .join('');
@@ -76,8 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const abrirModalRegistro = async (empleado = null) => {
         const cargos = await window.api.getCargos();
-        
-        // Se permite el ingreso para probar si aún no se crean cargos:
         const datosCargos = cargos.success ? cargos.data : [];
 
         const resultado = await Swal.fire({
@@ -116,12 +113,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // [BLOQUE EVOLUCIONADO]: Manejo Nativo del explorador de archivos
     const abrirModalCargaMasiva = async () => {
+        let rutaSeleccionada = null; // Guardará la ruta nativa que nos devuelva el backend
+
         const contenido = `
             <div class="text-left">
                 <p class="text-xs text-gray-300 mb-4">Usa la plantilla oficial para garantizar que los cargos y tipos de sangre sean válidos. Fecha de fin de contrato puede ir vacía si es indefinido.</p>
-                <button id="btnDescargarPlantillaSwal" class="text-sm text-blue-300 underline mb-4">⬇️ Descargar Plantilla Oficial</button>
-                <input type="file" id="archivoExcelSwal" class="swal2-file" accept=".xlsx,.xls">
+                <button id="btnDescargarPlantillaSwal" class="text-sm text-blue-400 hover:text-blue-300 underline mb-4 transition-colors">⬇️ Descargar Plantilla Oficial</button>
+                
+                <div class="mt-4 p-5 border border-dashed border-gray-600 rounded-lg bg-black text-center">
+                    <button id="btnSeleccionarExcelSwal" class="px-5 py-2.5 bg-green-700 hover:bg-green-600 text-white font-bold rounded-lg transition-all text-sm mb-3 shadow-lg flex items-center justify-center gap-2 mx-auto">
+                        <span>📁</span> Buscar archivo Excel
+                    </button>
+                    <p id="lblRutaExcel" class="text-xs text-terminal-yellow font-mono break-all px-2">Ningún archivo seleccionado</p>
+                </div>
             </div>
         `;
 
@@ -144,20 +150,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     Swal.fire({ icon: 'success', title: 'Plantilla guardada', text: 'Completa el archivo y vuelve a importarlo.', ...estilosSwal });
                 });
+
+                // Escuchador del nuevo botón nativo
+                const botonSeleccionar = document.getElementById('btnSeleccionarExcelSwal');
+                const labelRuta = document.getElementById('lblRutaExcel');
+                
+                botonSeleccionar.addEventListener('click', async () => {
+                    // Llamamos al explorador nativo de Windows/Mac
+                    const filePath = await window.api.seleccionarArchivoExcel();
+                    if (filePath) {
+                        rutaSeleccionada = filePath;
+                        // Mostramos el nombre del archivo en la interfaz (recortando la ruta larga)
+                        const nombreArchivo = filePath.split('\\').pop().split('/').pop();
+                        labelRuta.textContent = `Seleccionado: ${nombreArchivo}`;
+                        labelRuta.classList.add('text-green-400');
+                        labelRuta.classList.remove('text-terminal-yellow');
+                    }
+                });
             },
             preConfirm: () => {
-                const input = document.getElementById('archivoExcelSwal');
-                if (!input.files || input.files.length === 0) {
-                    Swal.showValidationMessage('Selecciona un archivo de Excel.');
+                if (!rutaSeleccionada) {
+                    Swal.showValidationMessage('Debes buscar y seleccionar un archivo de Excel primero.');
                     return false;
                 }
-                return input.files[0].path;
+                return rutaSeleccionada;
             }
         });
 
         if (!resultado.isConfirmed) return;
 
         Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...estilosSwal });
+        
+        // Enviamos la ruta limpia y directa al backend
         const importacion = await window.api.importarEmpleadosExcel(resultado.value);
         Swal.close();
 
