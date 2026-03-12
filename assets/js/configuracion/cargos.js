@@ -3,18 +3,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const tablaCargos = document.getElementById('tablaCargos');
     const btnNuevoCargo = document.getElementById('btnNuevoCargo');
 
-    // Paleta de colores estándar para alertas
     const estilosSwal = {
-        confirmButtonColor: '#FACC15', // Amarillo Terminal
-        background: '#1F2937',         // Gris Oscuro
-        color: '#E2E8F0'               // Texto claro
+        confirmButtonColor: '#FACC15', 
+        background: '#1F2937',        
+        color: '#E2E8F0'              
     };
 
     let cargosCache = [];
 
-    // ==========================================
-    // 1. CARGAR TABLA
-    // ==========================================
     const cargarTabla = async () => {
         try {
             const respuesta = await window.api.getAllCargos();
@@ -28,14 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
             tablaCargos.innerHTML = '';
 
             if (cargosCache.length === 0) {
-                tablaCargos.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-gray-500 italic">No hay cargos registrados en el sistema.</td></tr>';
+                tablaCargos.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500 italic">No hay cargos registrados en el sistema.</td></tr>';
                 return;
             }
 
             cargosCache.forEach(cargo => {
                 const esAdmin = cargo.nombre === 'ADMINISTRADOR DEL SISTEMA';
                 
-                // Lógica de botones: El Administrador no se puede tocar
                 let botonesHTML = '';
                 if (esAdmin) {
                     botonesHTML = `<span class="text-xs text-gray-500 italic px-2 py-1 bg-gray-800 rounded">Protegido</span>`;
@@ -48,9 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }
 
+                // Colores para el tipo de cargo
+                let colorBadge = 'bg-gray-700 text-gray-300 border-gray-600';
+                if(cargo.tipo === 'OPERATIVO') colorBadge = 'bg-green-900/50 text-green-400 border-green-700';
+                if(cargo.tipo === 'ADMINISTRATIVO') colorBadge = 'bg-blue-900/50 text-blue-400 border-blue-700';
+                if(cargo.tipo === 'AMBOS') colorBadge = 'bg-yellow-900/50 text-yellow-500 border-yellow-700';
+
                 const fila = `
                     <tr class="hover:bg-gray-800 transition-colors">
                         <td class="p-3 font-bold text-white">${cargo.nombre}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-1 rounded text-xs border ${colorBadge} font-semibold">
+                                ${cargo.tipo}
+                            </span>
+                        </td>
                         <td class="p-3 text-gray-400 text-xs">${cargo.descripcion || '<span class="italic text-gray-600">Sin descripción...</span>'}</td>
                         <td class="p-3 text-center align-middle">${botonesHTML}</td>
                     </tr>
@@ -58,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 tablaCargos.insertAdjacentHTML('beforeend', fila);
             });
 
-            // Reasignar eventos dinámicos a los botones nuevos
             document.querySelectorAll('.btnEditar').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const cargo = cargosCache.find(c => c.id === Number(btn.dataset.id));
@@ -78,9 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ==========================================
-    // 2. MODAL CREAR / EDITAR CARGO
-    // ==========================================
     const abrirModalCargo = async (cargo = null) => {
         const resultado = await Swal.fire({
             title: cargo ? 'Editar Cargo' : 'Registrar Nuevo Cargo',
@@ -89,6 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div>
                         <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Nombre del Cargo <span class="text-red-500">*</span></label>
                         <input id="cargoNombre" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none uppercase" placeholder="Ej. CONDUCTOR" value="${cargo ? cargo.nombre : ''}">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Clasificación <span class="text-red-500">*</span></label>
+                        <select id="cargoTipo" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none" style="background-color: #1F2937;">
+                            <option value="OPERATIVO" ${cargo && cargo.tipo === 'OPERATIVO' ? 'selected' : ''}>SOLO OPERATIVO (Cubre Turnos)</option>
+                            <option value="ADMINISTRATIVO" ${cargo && cargo.tipo === 'ADMINISTRATIVO' ? 'selected' : ''}>SOLO ADMINISTRATIVO (Oficina)</option>
+                            <option value="AMBOS" ${cargo && cargo.tipo === 'AMBOS' ? 'selected' : ''}>AMBOS (Oficina y Cubre Turnos)</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Descripción (Opcional)</label>
@@ -103,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ...estilosSwal,
             preConfirm: () => {
                 const nombre = document.getElementById('cargoNombre').value.trim();
+                const tipo = document.getElementById('cargoTipo').value;
                 const descripcion = document.getElementById('cargoDesc').value.trim();
 
                 if (!nombre) {
@@ -110,30 +121,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     return false;
                 }
 
-                return { nombre, descripcion };
+                return { nombre, tipo, descripcion };
             }
         });
 
-        // Procesar la respuesta del modal
         if (resultado.isConfirmed) {
             const datos = resultado.value;
-            
-            // Mostrar estado de carga
             Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...estilosSwal });
 
             try {
                 let respuesta;
                 if (cargo) {
-                    // Editar
                     respuesta = await window.api.actualizarCargo({ id: cargo.id, ...datos });
                 } else {
-                    // Crear
                     respuesta = await window.api.crearCargo(datos);
                 }
 
                 if (respuesta.success) {
                     Swal.fire({ icon: 'success', title: 'Operación Exitosa', text: respuesta.message, ...estilosSwal });
-                    cargarTabla(); // Recargar los datos
+                    cargarTabla(); 
                 } else {
                     Swal.fire({ icon: 'error', title: 'Atención', text: respuesta.message, ...estilosSwal });
                 }
@@ -144,33 +150,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ==========================================
-    // 3. ELIMINAR CARGO
-    // ==========================================
     const eliminarCargo = async (id, nombre) => {
         const confirmacion = await Swal.fire({
             title: '¿Eliminar cargo?',
             text: `Vas a eliminar permanentemente "${nombre}".`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#EF4444', // Rojo para acción destructiva
+            confirmButtonColor: '#EF4444', 
             cancelButtonColor: '#374151',
             confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar',
-            background: '#1F2937', color: '#E2E8F0'
+            ...estilosSwal
         });
 
         if (confirmacion.isConfirmed) {
             Swal.fire({ title: 'Eliminando...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...estilosSwal });
-            
             try {
                 const respuesta = await window.api.eliminarCargo(id);
-                
                 if (respuesta.success) {
                     Swal.fire({ icon: 'success', title: 'Eliminado', text: respuesta.message, ...estilosSwal });
                     cargarTabla();
                 } else {
-                    // Aquí se mostrará si el cargo tiene empleados asignados
                     Swal.fire({ icon: 'error', title: 'No se puede eliminar', text: respuesta.message, ...estilosSwal });
                 }
             } catch (error) {
@@ -180,11 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ==========================================
-    // 4. INICIALIZAR EVENTOS
-    // ==========================================
     btnNuevoCargo.addEventListener('click', () => abrirModalCargo());
-    
-    // Ejecutar la carga inicial
     cargarTabla();
 });

@@ -3,13 +3,14 @@ const bcrypt = require('bcryptjs');
 const { app } = require('electron');
 
 function inicializarBaseDeDatos() {
-    console.log("=== Sincronizando Base de Datos (Seguridad, Mayúsculas y Fechas) ===");
+    console.log("=== Sincronizando Base de Datos (Evolución: Tipo de Cargo y Zonas) ===");
 
     db.exec(`
         CREATE TABLE IF NOT EXISTS cargos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL UNIQUE,
-            descripcion TEXT
+            descripcion TEXT,
+            tipo TEXT NOT NULL DEFAULT 'OPERATIVO'
         );
 
         CREATE TABLE IF NOT EXISTS empleados (
@@ -46,6 +47,7 @@ function inicializarBaseDeDatos() {
 
         CREATE TABLE IF NOT EXISTS zonas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            abreviatura TEXT NOT NULL UNIQUE,
             nombre TEXT NOT NULL UNIQUE,
             personal_requerido INTEGER DEFAULT 1
         );
@@ -67,11 +69,11 @@ function inicializarBaseDeDatos() {
         );
     `);
 
-    // Insertar SOLO el cargo de Administrador para que el sistema inicie en limpio
+    // Insertar SOLO el cargo de Administrador con su tipo
     const stmtCheckCargos = db.prepare('SELECT count(*) as count FROM cargos');
     if (stmtCheckCargos.get().count === 0) {
-        const insertCargo = db.prepare('INSERT INTO cargos (nombre) VALUES (?)');
-        insertCargo.run('ADMINISTRADOR DEL SISTEMA');
+        const insertCargo = db.prepare('INSERT INTO cargos (nombre, tipo) VALUES (?, ?)');
+        insertCargo.run('ADMINISTRADOR DEL SISTEMA', 'ADMINISTRATIVO');
     }
 
     // Insertar Super Usuario
@@ -106,7 +108,6 @@ function inicializarBaseDeDatos() {
         }
     }
 
-    // Asegurar credenciales y documento de super usuario
     const superUser = db.prepare("SELECT id, empleado_id FROM usuarios WHERE rol = 'SUPER USUARIO' LIMIT 1").get();
     if (superUser) {
         db.prepare('UPDATE usuarios SET usuario = ?, activo = 1 WHERE id = ?').run(adminDocUserPass, superUser.id);
@@ -116,7 +117,6 @@ function inicializarBaseDeDatos() {
         db.prepare('UPDATE usuarios SET password = ?, debe_cambiar_password = 0 WHERE id = ?').run(hashPassword, superUser.id);
     }
 
-    // Reglas Ley 2101
     const stmtCheckReglas = db.prepare('SELECT count(*) as count FROM reglas_jornada');
     if (stmtCheckReglas.get().count === 0) {
         const stmtInsertRegla = db.prepare('INSERT INTO reglas_jornada (fecha_inicio, fecha_fin, horas_semanales, descripcion) VALUES (?, ?, ?, ?)');

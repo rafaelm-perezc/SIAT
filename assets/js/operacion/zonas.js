@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tablaZonas.innerHTML = '';
 
             if (zonasCache.length === 0) {
-                tablaZonas.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500 italic">No hay zonas registradas en la infraestructura.</td></tr>';
+                tablaZonas.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-500 italic">No hay zonas registradas en la infraestructura.</td></tr>';
                 return;
             }
 
@@ -37,9 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fila = `
                     <tr class="hover:bg-gray-800 transition-colors">
                         <td class="p-4 text-center text-gray-500 font-mono text-xs">#${zona.id}</td>
+                        <td class="p-4 font-bold text-terminal-yellow">${zona.abreviatura}</td>
                         <td class="p-4 font-bold text-white">${zona.nombre}</td>
                         <td class="p-4 text-center">
-                            <span class="px-4 py-1 bg-gray-900 border border-gray-700 rounded-full text-terminal-yellow font-bold">
+                            <span class="px-4 py-1 bg-gray-900 border border-gray-700 rounded-full text-blue-300 font-bold">
                                 👨‍🔧 ${zona.personal_requerido} operario(s)
                             </span>
                         </td>
@@ -54,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 tablaZonas.insertAdjacentHTML('beforeend', fila);
             });
 
-            // Reasignar eventos a los botones
             document.querySelectorAll('.btnEditar').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const zona = zonasCache.find(z => z.id === Number(btn.dataset.id));
@@ -80,9 +80,15 @@ document.addEventListener('DOMContentLoaded', () => {
             title: zona ? 'Editar Zona' : 'Registrar Nueva Zona',
             html: `
                 <div class="text-left space-y-4 mt-4">
-                    <div>
-                        <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Nombre de la Zona <span class="text-red-500">*</span></label>
-                        <input id="zonaNombre" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none uppercase" placeholder="Ej. PLATAFORMA NORTE" value="${zona ? zona.nombre : ''}">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="col-span-1">
+                            <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Abrev. <span class="text-red-500">*</span></label>
+                            <input id="zonaAbrev" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none uppercase" placeholder="Ej. PTN" value="${zona ? zona.abreviatura : ''}" maxlength="5">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Nombre de la Zona <span class="text-red-500">*</span></label>
+                            <input id="zonaNombre" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none uppercase" placeholder="Ej. PLATAFORMA NORTE" value="${zona ? zona.nombre : ''}">
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Personal Requerido por Turno <span class="text-red-500">*</span></label>
@@ -97,11 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
             focusConfirm: false,
             ...estilosSwal,
             preConfirm: () => {
+                const abreviatura = document.getElementById('zonaAbrev').value.trim();
                 const nombre = document.getElementById('zonaNombre').value.trim();
                 const personal_requerido = document.getElementById('zonaPersonal').value;
 
-                if (!nombre) {
-                    Swal.showValidationMessage('El nombre de la zona es obligatorio');
+                if (!abreviatura || !nombre) {
+                    Swal.showValidationMessage('La abreviatura y el nombre son obligatorios');
                     return false;
                 }
                 if (personal_requerido < 1) {
@@ -109,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return false;
                 }
 
-                return { nombre, personal_requerido: Number(personal_requerido) };
+                return { abreviatura, nombre, personal_requerido: Number(personal_requerido) };
             }
         });
 

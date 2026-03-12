@@ -1,15 +1,15 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-    // --- MÓDULOS BASE ---
     ping: () => ipcRenderer.invoke('ping'),
     
-    // --- AUTENTICACIÓN Y SEGURIDAD ---
     authLogin: (credentials) => ipcRenderer.invoke('auth:login', credentials),
     cambiarPassword: (datos) => ipcRenderer.invoke('auth:cambiarPassword', datos),
     resetPassword: (documento) => ipcRenderer.invoke('auth:resetPassword', documento),
     
-    // --- MÓDULO 4: Personal Operativo ---
+    // --- DASHBOARD ---
+    getDashboardStats: () => ipcRenderer.invoke('dashboard:getStats'),
+    
     getEmpleados: () => ipcRenderer.invoke('empleados:get'),
     crearEmpleado: (datos) => ipcRenderer.invoke('empleados:crear', datos),
     actualizarEmpleado: (datos) => ipcRenderer.invoke('empleados:actualizar', datos),
@@ -17,19 +17,16 @@ contextBridge.exposeInMainWorld('api', {
     descargarPlantilla: () => ipcRenderer.invoke('empleados:descargarPlantilla'),
     importarEmpleadosExcel: (filePath) => ipcRenderer.invoke('empleados:importarExcel', filePath),
 
-    // --- MÓDULO 5: Zonas e Infraestructura ---
     getAllZonas: () => ipcRenderer.invoke('zonas:getAll'),
     crearZona: (datos) => ipcRenderer.invoke('zonas:crear', datos),
     actualizarZona: (datos) => ipcRenderer.invoke('zonas:actualizar', datos),
     eliminarZona: (id) => ipcRenderer.invoke('zonas:eliminar', id),
 
-    // --- MÓDULO 6: Configuración (CRUD Cargos) ---
     getAllCargos: () => ipcRenderer.invoke('cargos:getAll'),
     crearCargo: (datos) => ipcRenderer.invoke('cargos:crear', datos),
     actualizarCargo: (datos) => ipcRenderer.invoke('cargos:actualizar', datos),
     eliminarCargo: (id) => ipcRenderer.invoke('cargos:eliminar', id),
 
-    // --- MÓDULO 6: Configuración (CRUD Usuarios) ---
     getAllUsuarios: () => ipcRenderer.invoke('usuarios:getAll'),
     getEmpleadosSinUsuario: () => ipcRenderer.invoke('usuarios:getSinUsuario'),
     crearUsuario: (datos) => ipcRenderer.invoke('usuarios:crear', datos),

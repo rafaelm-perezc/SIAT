@@ -1,13 +1,10 @@
 const db = require('../database/db');
 
-// Función de limpieza y forzado de mayúsculas
 const upper = (str) => str ? String(str).toUpperCase().trim() : '';
 
 const cargoController = {
-    // 1. Obtener todos los cargos OCULTANDO EL ADMIN
     getAll: () => {
         try {
-            // Filtramos para que el Administrador del Sistema no viaje a la interfaz gráfica
             const stmt = db.prepare("SELECT * FROM cargos WHERE nombre != 'ADMINISTRADOR DEL SISTEMA' ORDER BY nombre ASC");
             return { success: true, data: stmt.all() };
         } catch (error) {
@@ -16,18 +13,18 @@ const cargoController = {
         }
     },
 
-    // 2. Crear un nuevo cargo
     crear: (cargoData) => {
         try {
             const nombre = upper(cargoData.nombre);
             const descripcion = cargoData.descripcion ? cargoData.descripcion.trim() : '';
+            const tipo = upper(cargoData.tipo) || 'OPERATIVO';
 
             if (!nombre) {
                 return { success: false, message: 'EL NOMBRE DEL CARGO ES OBLIGATORIO' };
             }
 
-            const stmt = db.prepare('INSERT INTO cargos (nombre, descripcion) VALUES (?, ?)');
-            stmt.run(nombre, descripcion);
+            const stmt = db.prepare('INSERT INTO cargos (nombre, descripcion, tipo) VALUES (?, ?, ?)');
+            stmt.run(nombre, descripcion, tipo);
             
             return { success: true, message: 'CARGO CREADO EXITOSAMENTE' };
         } catch (error) {
@@ -39,12 +36,12 @@ const cargoController = {
         }
     },
 
-    // 3. Actualizar un cargo existente
     actualizar: (cargoData) => {
         try {
             const id = Number(cargoData.id);
             const nombre = upper(cargoData.nombre);
             const descripcion = cargoData.descripcion ? cargoData.descripcion.trim() : '';
+            const tipo = upper(cargoData.tipo) || 'OPERATIVO';
 
             const cargoActual = db.prepare('SELECT nombre FROM cargos WHERE id = ?').get(id);
             if (!cargoActual) return { success: false, message: 'CARGO NO ENCONTRADO' };
@@ -53,8 +50,8 @@ const cargoController = {
                 return { success: false, message: 'SEGURIDAD: NO SE PUEDE MODIFICAR EL CARGO RAÍZ DEL SISTEMA' };
             }
 
-            const stmt = db.prepare('UPDATE cargos SET nombre = ?, descripcion = ? WHERE id = ?');
-            stmt.run(nombre, descripcion, id);
+            const stmt = db.prepare('UPDATE cargos SET nombre = ?, descripcion = ?, tipo = ? WHERE id = ?');
+            stmt.run(nombre, descripcion, tipo, id);
 
             return { success: true, message: 'CARGO ACTUALIZADO EXITOSAMENTE' };
         } catch (error) {
@@ -66,7 +63,6 @@ const cargoController = {
         }
     },
 
-    // 4. Eliminar un cargo
     eliminar: (id) => {
         try {
             const cargoActual = db.prepare('SELECT nombre FROM cargos WHERE id = ?').get(id);

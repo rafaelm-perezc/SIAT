@@ -4,7 +4,7 @@
     <title>SIAT - Dashboard</title>
     <%- include('../partials/head.ejs') %>
     <script src="../../../assets/js/app.js" defer></script>
-</head>
+    <script src="../../../assets/js/dashboard/index.js" defer></script> </head>
 <body class="bg-terminal-black flex h-screen overflow-hidden text-terminal-gray font-sans">
 
     <%- include('../partials/sidebar.ejs', { activeSection: 'dashboard' }) %>
@@ -16,16 +16,16 @@
         <div class="flex-1 overflow-y-auto p-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-terminal-darkgray p-6 rounded-xl border-l-4 border-terminal-yellow shadow-lg">
-                    <h3 class="text-gray-400 text-sm font-medium">Personal Operativo</h3>
-                    <p class="text-3xl font-bold text-white mt-2">0</p>
+                    <h3 class="text-gray-400 text-sm font-medium">Personal Operativo (Activo)</h3>
+                    <p id="statOperativos" class="text-3xl font-bold text-white mt-2">...</p>
                 </div>
                 <div class="bg-terminal-darkgray p-6 rounded-xl border-l-4 border-blue-500 shadow-lg">
                     <h3 class="text-gray-400 text-sm font-medium">Zonas Activas</h3>
-                    <p class="text-3xl font-bold text-white mt-2">3</p>
+                    <p id="statZonas" class="text-3xl font-bold text-white mt-2">...</p>
                 </div>
                 <div class="bg-terminal-darkgray p-6 rounded-xl border-l-4 border-green-500 shadow-lg">
                     <h3 class="text-gray-400 text-sm font-medium">Límite de Jornada</h3>
-                    <p class="text-3xl font-bold text-white mt-2">44h</p>
+                    <p id="statJornada" class="text-3xl font-bold text-white mt-2">...</p>
                 </div>
             </div>
 

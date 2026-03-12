@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <option value="0" style="background-color: #1F2937; color: white;" ${empleado.activo === 0 ? 'selected' : ''}>Inactivo</option>
                 </select>
                 <label class="text-xs text-gray-300 col-span-1 mt-2">Inicio contrato</label>
-                <label class="text-xs text-gray-300 col-span-1 mt-2">Inicio labores</label>
                 <input type="date" id="fic" class="swal2-input" value="${empleado.fecha_inicio_contrato || ''}">
+                <label class="text-xs text-gray-300 col-span-1 mt-2">Inicio labores</label>
                 <input type="date" id="fil" class="swal2-input" value="${empleado.fecha_inicio_labores || ''}">
                 <label class="text-xs text-gray-300 col-span-2 mt-2">Fin contrato (vacío = indefinido)</label>
                 <input type="date" id="ffc" class="swal2-input col-span-2" value="${empleado.fecha_fin_contrato || ''}">

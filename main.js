@@ -19,7 +19,8 @@ const authController = require('./src/controllers/authController');
 const empleadoController = require('./src/controllers/empleadoController'); 
 const cargoController = require('./src/controllers/cargoController'); 
 const usuarioController = require('./src/controllers/usuarioController');
-const zonaController = require('./src/controllers/zonaController'); // NUEVO IMPORT DE ZONAS
+const zonaController = require('./src/controllers/zonaController'); 
+const dashboardController = require('./src/controllers/dashboardController'); // NUEVO IMPORT PARA DASHBOARD
 
 let mainWindow;
 
@@ -101,6 +102,9 @@ ipcMain.handle('auth:login', async (event, { user, pass }) => {
 ipcMain.handle('auth:cambiarPassword', async (event, { userId, oldPassword, newPassword }) => authController.cambiarPassword(userId, oldPassword, newPassword));
 ipcMain.handle('auth:resetPassword', async (event, documento) => authController.resetPassword(documento));
 
+// --- DASHBOARD ---
+ipcMain.handle('dashboard:getStats', async () => dashboardController.getStats());
+
 // --- PERSONAL OPERATIVO ---
 ipcMain.handle('empleados:get', async () => empleadoController.getAll());
 ipcMain.handle('empleados:crear', async (event, datos) => empleadoController.crear(datos));
@@ -112,7 +116,11 @@ ipcMain.handle('empleados:descargarPlantilla', async () => {
         defaultPath: 'Plantilla_Personal_SIAT.xlsx',
         filters: [{ name: 'Archivo Excel', extensions: ['xlsx'] }]
     });
-    if (resultadoDialogo.canceled || !resultadoDialogo.filePath) return { canceled: true };
+
+    if (resultadoDialogo.canceled || !resultadoDialogo.filePath) {
+        return { canceled: true };
+    }
+    
     return empleadoController.generarPlantilla(resultadoDialogo.filePath);
 });
 ipcMain.handle('empleados:importarExcel', async (event, filePath) => empleadoController.cargarExcel(filePath));
