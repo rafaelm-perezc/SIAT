@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>SIAT - Configuración</title>
+    <%- include('../partials/head.ejs') %>
+    <script src="../../../assets/js/app.js" defer></script>
+    <script src="../../../assets/js/configuracion/cargos.js" defer></script>
+    <script src="../../../assets/js/configuracion/usuarios.js" defer></script>
+</head>
+<body class="bg-terminal-black flex h-screen overflow-hidden text-terminal-gray font-sans">
+
+    <%- include('../partials/sidebar.ejs', { activeSection: 'configuracion' }) %>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <%- include('../partials/header.ejs') %>
+
+        <div class="flex-1 overflow-y-auto p-8 space-y-8">
+            <section>
+                <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Configuración de cargos</h2>
+                        <p class="text-sm text-gray-400">Administra el catálogo de cargos de la operación</p>
+                    </div>
+                    <button id="btnNuevoCargo" class="px-5 py-2.5 bg-terminal-yellow text-black font-bold rounded-lg hover:bg-yellow-500 transition-all">
+                        ➕ Nuevo cargo
+                    </button>
+                </div>
+
+                <div class="bg-terminal-darkgray rounded-xl border border-gray-800 overflow-hidden shadow-2xl">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-black text-terminal-yellow border-b border-gray-700 text-sm">
+                                <th class="p-4 font-semibold uppercase tracking-wider">Cargo</th>
+                                <th class="p-4 font-semibold uppercase tracking-wider">Descripción</th>
+                                <th class="p-4 font-semibold uppercase tracking-wider text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCargos" class="divide-y divide-gray-800 text-sm text-gray-300">
+                            <tr><td colspan="3" class="p-8 text-center text-gray-500 italic">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section>
+                <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Configuración de usuarios</h2>
+                        <p class="text-sm text-gray-400">Crea accesos al sistema y administra permisos</p>
+                    </div>
+                    <button id="btnNuevoUsuario" class="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-500 transition-all">
+                        👤 Nuevo usuario
+                    </button>
+                </div>
+
+                <div class="bg-terminal-darkgray rounded-xl border border-gray-800 overflow-hidden shadow-2xl">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-black text-terminal-yellow border-b border-gray-700 text-sm">
+                                <th class="p-4 font-semibold uppercase tracking-wider">Usuario / Documento</th>
+                                <th class="p-4 font-semibold uppercase tracking-wider">Rol</th>
+                                <th class="p-4 font-semibold uppercase tracking-wider">Cargo</th>
+                                <th class="p-4 font-semibold uppercase tracking-wider text-center">Estado</th>
+                                <th class="p-4 font-semibold uppercase tracking-wider text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaUsuarios" class="divide-y divide-gray-800 text-sm text-gray-300">
+                            <tr><td colspan="5" class="p-8 text-center text-gray-500 italic">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+</body>
+</html>
