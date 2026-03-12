@@ -15,5 +15,8 @@ contextBridge.exposeInMainWorld('api', {
     // --- MÓDULO 4: Personal Operativo ---
     getEmpleados: () => ipcRenderer.invoke('empleados:get'),
     crearEmpleado: (datos) => ipcRenderer.invoke('empleados:crear', datos),
+    actualizarEmpleado: (datos) => ipcRenderer.invoke('empleados:actualizar', datos),
+    getCargos: () => ipcRenderer.invoke('cargos:get'),
+    descargarPlantilla: () => ipcRenderer.invoke('empleados:descargarPlantilla'),
     importarEmpleadosExcel: (filePath) => ipcRenderer.invoke('empleados:importarExcel', filePath)
 });

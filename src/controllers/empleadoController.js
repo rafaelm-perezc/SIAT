@@ -5,12 +5,23 @@ const ExcelJS = require('exceljs');
 const upper = (str) => str ? String(str).toUpperCase().trim() : '';
 
 const empleadoController = {
+    getCargos: () => {
+        try {
+            const stmt = db.prepare('SELECT id, nombre FROM cargos ORDER BY nombre ASC');
+            return { success: true, data: stmt.all() };
+        } catch (error) {
+            console.error('Error en getCargos:', error);
+            return { success: false, message: 'ERROR AL CONSULTAR CARGOS' };
+        }
+    },
+
     getAll: () => {
         try {
             const stmt = db.prepare(`
                 SELECT e.*, c.nombre as cargo_nombre 
                 FROM empleados e
                 INNER JOIN cargos c ON e.cargo_id = c.id
+                WHERE e.documento <> 'ADMIN'
                 ORDER BY e.primer_nombre ASC
             `);
             return { success: true, data: stmt.all() };
@@ -30,9 +41,7 @@ const empleadoController = {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
             
-            // Si fecha inicio labores está vacía, toma la de inicio contrato
             const fechaLabores = empleadoData.fecha_inicio_labores || empleadoData.fecha_inicio_contrato;
-            // Si fecha fin viene vacía, inserta null
             const fechaFin = empleadoData.fecha_fin_contrato ? empleadoData.fecha_fin_contrato : null;
 
             stmt.run(
@@ -50,16 +59,60 @@ const empleadoController = {
         }
     },
 
+    actualizar: (empleadoData) => {
+        try {
+            const fechaLabores = empleadoData.fecha_inicio_labores || empleadoData.fecha_inicio_contrato;
+            const fechaFin = empleadoData.fecha_fin_contrato ? empleadoData.fecha_fin_contrato : null;
+
+            const stmt = db.prepare(`
+                UPDATE empleados
+                SET documento = ?,
+                    primer_nombre = ?,
+                    segundo_nombre = ?,
+                    primer_apellido = ?,
+                    segundo_apellido = ?,
+                    celular = ?,
+                    contacto_emergencia_nombre = ?,
+                    contacto_emergencia_celular = ?,
+                    eps = ?,
+                    tipo_sangre = ?,
+                    cargo_id = ?,
+                    fecha_inicio_contrato = ?,
+                    fecha_inicio_labores = ?,
+                    fecha_fin_contrato = ?,
+                    activo = ?
+                WHERE id = ?
+            `);
+
+            const result = stmt.run(
+                upper(empleadoData.documento), upper(empleadoData.primer_nombre), upper(empleadoData.segundo_nombre),
+                upper(empleadoData.primer_apellido), upper(empleadoData.segundo_apellido), upper(empleadoData.celular),
+                upper(empleadoData.contacto_emergencia_nombre), upper(empleadoData.contacto_emergencia_celular),
+                upper(empleadoData.eps), upper(empleadoData.tipo_sangre), Number(empleadoData.cargo_id),
+                empleadoData.fecha_inicio_contrato, fechaLabores, fechaFin, Number(empleadoData.activo), Number(empleadoData.id)
+            );
+
+            if (result.changes === 0) {
+                return { success: false, message: 'EMPLEADO NO ENCONTRADO' };
+            }
+
+            return { success: true, message: 'EMPLEADO ACTUALIZADO EXITOSAMENTE' };
+        } catch (error) {
+            if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return { success: false, message: 'EL DOCUMENTO YA ESTÁ REGISTRADO' };
+            console.error('Error en actualizar empleado:', error);
+            return { success: false, message: 'ERROR INTERNO AL ACTUALIZAR EL EMPLEADO' };
+        }
+    },
+
     generarPlantilla: async (filePath) => {
         try {
             const cargos = db.prepare('SELECT nombre FROM cargos ORDER BY nombre ASC').all();
-            if (cargos.length === 0) return { success: false, message: 'NO HAY CARGOS REGISTRADOS.' };
 
             const workbook = new ExcelJS.Workbook();
             const ws = workbook.addWorksheet('Plantilla_Empleados');
             const hiddenWs = workbook.addWorksheet('DataOculta', { state: 'hidden' });
 
-            const nombresCargos = cargos.map(c => c.nombre);
+            const nombresCargos = cargos.length > 0 ? cargos.map(c => c.nombre) : ['AUXILIAR OPERATIVO'];
             const tiposSangre = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
             hiddenWs.getColumn('A').values = nombresCargos;
@@ -125,13 +178,11 @@ const empleadoController = {
                 for (const emp of empleados) {
                     filaActual++;
                     try {
-                        // 1. Validaciones Críticas
                         if (!emp.Documento || !emp.Fecha_Inicio_Contrato) {
                             reporteErrores.push({ fila: filaActual, documento: emp.Documento || 'Vacío', motivo: 'Falta Documento o Fecha de Inicio de Contrato.' });
                             continue;
                         }
 
-                        // 2. Validación de Cargo
                         const nombreCargo = upper(emp.Cargo);
                         let cargoId;
                         if (cargosCache[nombreCargo]) {
@@ -147,12 +198,10 @@ const empleadoController = {
                             }
                         }
 
-                        // 3. Procesamiento de Fechas
                         const fechaInicioContrato = String(emp.Fecha_Inicio_Contrato);
                         const fechaInicioLabores = emp.Fecha_Inicio_Labores ? String(emp.Fecha_Inicio_Labores) : fechaInicioContrato;
                         const fechaFinContrato = emp.Fecha_Fin_Contrato ? String(emp.Fecha_Fin_Contrato) : null;
 
-                        // 4. Inserción
                         stmtInsertEmpleado.run(
                             upper(emp.Documento), upper(emp.Primer_Nombre), upper(emp.Segundo_Nombre),
                             upper(emp.Primer_Apellido), upper(emp.Segundo_Apellido), upper(emp.Celular),

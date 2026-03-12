@@ -18,7 +18,7 @@ const authController = {
                 INNER JOIN empleados e ON u.empleado_id = e.id
                 WHERE u.usuario = ? AND u.activo = 1
             `);
-            const user = stmt.get(String(username).trim());
+            const user = stmt.get(String(username).trim().toUpperCase());
 
             if (!user) return { success: false, message: 'Usuario no encontrado' };
 

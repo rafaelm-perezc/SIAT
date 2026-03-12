@@ -1,169 +1,234 @@
 document.addEventListener('DOMContentLoaded', () => {
-    
     const tablaEmpleados = document.getElementById('tablaEmpleados');
-    const modalExcel = document.getElementById('modalExcel');
     const btnModalExcel = document.getElementById('btnModalExcel');
-    const btnCerrarExcel = document.getElementById('btnCerrarExcel');
-    const formExcel = document.getElementById('formExcel');
-    const btnDescargarPlantilla = document.getElementById('btnDescargarPlantilla');
+    const btnRegistroManual = document.getElementById('btnRegistroManual');
 
-    // 1. CARGAR DATOS EN LA TABLA
-    const cargarTabla = async () => {
-        try {
-            const respuesta = await window.api.getEmpleados();
-            
-            if (respuesta.success) {
-                const empleados = respuesta.data;
-                tablaEmpleados.innerHTML = ''; 
+    const estilosSwal = {
+        confirmButtonColor: '#FACC15',
+        background: '#1F2937',
+        color: '#E2E8F0'
+    };
 
-                if (empleados.length === 0) {
-                    tablaEmpleados.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500 italic">No hay personal registrado.</td></tr>`;
-                    return;
+    let empleadosCache = [];
+
+    const tipoContratoTexto = (fechaFin) => fechaFin || '<span class="italic text-gray-500">Indefinido</span>';
+
+    const construirFormularioEmpleado = (cargos, empleado = {}) => {
+        const cargoOptions = cargos
+            .map(cargo => `<option value="${cargo.id}" ${Number(empleado.cargo_id) === Number(cargo.id) ? 'selected' : ''}>${cargo.nombre}</option>`)
+            .join('');
+
+        return `
+            <div class="grid grid-cols-2 gap-3 text-left">
+                <input id="doc" class="swal2-input" placeholder="Documento" value="${empleado.documento || ''}">
+                <select id="cargo" class="swal2-select"><option value="">Cargo</option>${cargoOptions}</select>
+                <input id="pn" class="swal2-input" placeholder="Primer nombre" value="${empleado.primer_nombre || ''}">
+                <input id="sn" class="swal2-input" placeholder="Segundo nombre" value="${empleado.segundo_nombre || ''}">
+                <input id="pa" class="swal2-input" placeholder="Primer apellido" value="${empleado.primer_apellido || ''}">
+                <input id="sa" class="swal2-input" placeholder="Segundo apellido" value="${empleado.segundo_apellido || ''}">
+                <input id="cel" class="swal2-input" placeholder="Celular" value="${empleado.celular || ''}">
+                <input id="eps" class="swal2-input" placeholder="EPS" value="${empleado.eps || ''}">
+                <input id="cen" class="swal2-input" placeholder="Contacto emergencia" value="${empleado.contacto_emergencia_nombre || ''}">
+                <input id="cec" class="swal2-input" placeholder="Celular emergencia" value="${empleado.contacto_emergencia_celular || ''}">
+                <input id="ts" class="swal2-input" placeholder="Tipo sangre (ej. O+)" value="${empleado.tipo_sangre || ''}">
+                <select id="activo" class="swal2-select">
+                    <option value="1" ${(empleado.activo ?? 1) === 1 ? 'selected' : ''}>Activo</option>
+                    <option value="0" ${empleado.activo === 0 ? 'selected' : ''}>Inactivo</option>
+                </select>
+                <label class="text-xs text-gray-300 col-span-1 mt-2">Inicio contrato</label>
+                <label class="text-xs text-gray-300 col-span-1 mt-2">Inicio labores</label>
+                <input type="date" id="fic" class="swal2-input" value="${empleado.fecha_inicio_contrato || ''}">
+                <input type="date" id="fil" class="swal2-input" value="${empleado.fecha_inicio_labores || ''}">
+                <label class="text-xs text-gray-300 col-span-2 mt-2">Fin contrato (vacío = indefinido)</label>
+                <input type="date" id="ffc" class="swal2-input col-span-2" value="${empleado.fecha_fin_contrato || ''}">
+            </div>
+        `;
+    };
+
+    const leerDatosFormulario = () => ({
+        documento: document.getElementById('doc').value,
+        cargo_id: Number(document.getElementById('cargo').value),
+        primer_nombre: document.getElementById('pn').value,
+        segundo_nombre: document.getElementById('sn').value,
+        primer_apellido: document.getElementById('pa').value,
+        segundo_apellido: document.getElementById('sa').value,
+        celular: document.getElementById('cel').value,
+        eps: document.getElementById('eps').value,
+        contacto_emergencia_nombre: document.getElementById('cen').value,
+        contacto_emergencia_celular: document.getElementById('cec').value,
+        tipo_sangre: document.getElementById('ts').value,
+        activo: Number(document.getElementById('activo').value),
+        fecha_inicio_contrato: document.getElementById('fic').value,
+        fecha_inicio_labores: document.getElementById('fil').value,
+        fecha_fin_contrato: document.getElementById('ffc').value
+    });
+
+    const validarDatos = (datos) => {
+        if (!datos.documento || !datos.primer_nombre || !datos.primer_apellido || !datos.cargo_id || !datos.fecha_inicio_contrato) {
+            return 'Documento, nombres principales, primer apellido, cargo y fecha inicio contrato son obligatorios.';
+        }
+        return null;
+    };
+
+    const abrirModalRegistro = async (empleado = null) => {
+        const cargos = await window.api.getCargos();
+        if (!cargos.success || cargos.data.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Sin cargos', text: 'Debes registrar al menos un cargo para continuar.', ...estilosSwal });
+            return;
+        }
+
+        const resultado = await Swal.fire({
+            title: empleado ? 'Actualizar empleado' : 'Registro manual de empleado',
+            html: construirFormularioEmpleado(cargos.data, empleado || {}),
+            width: '900px',
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            confirmButtonText: empleado ? 'Guardar cambios' : 'Registrar',
+            focusConfirm: false,
+            ...estilosSwal,
+            preConfirm: async () => {
+                const datos = leerDatosFormulario();
+                const error = validarDatos(datos);
+                if (error) {
+                    Swal.showValidationMessage(error);
+                    return false;
                 }
 
-                empleados.forEach(emp => {
-                    const nombreCompleto = `${emp.primer_apellido} ${emp.segundo_apellido} ${emp.primer_nombre} ${emp.segundo_nombre}`.trim();
-                    const badgeActivo = emp.activo === 1 
-                        ? `<span class="px-2 py-1 bg-green-900 text-green-300 rounded text-xs font-bold border border-green-700">ACTIVO</span>`
-                        : `<span class="px-2 py-1 bg-red-900 text-red-300 rounded text-xs font-bold border border-red-700">INACTIVO</span>`;
-                    
-                    // Mostrar si es indefinido o tiene fecha
-                    const tipoContrato = emp.fecha_fin_contrato ? emp.fecha_fin_contrato : '<span class="italic text-gray-500">Indefinido</span>';
+                const respuesta = empleado
+                    ? await window.api.actualizarEmpleado({ ...datos, id: empleado.id })
+                    : await window.api.crearEmpleado(datos);
 
-                    const fila = `
-                        <tr class="hover:bg-gray-800 transition-colors">
-                            <td class="p-4 font-medium text-white">${emp.documento}</td>
-                            <td class="p-4">${nombreCompleto}</td>
-                            <td class="p-4 text-terminal-yellow font-medium text-xs">${emp.cargo_nombre}</td>
-                            <td class="p-4 text-center">${tipoContrato}</td>
-                            <td class="p-4 text-center">${badgeActivo}</td>
-                        </tr>
-                    `;
-                    tablaEmpleados.insertAdjacentHTML('beforeend', fila);
-                });
-            } else {
-                Swal.fire('Error', respuesta.message, 'error');
+                if (!respuesta.success) {
+                    Swal.showValidationMessage(respuesta.message || 'No se pudo guardar la información.');
+                    return false;
+                }
+
+                return respuesta;
             }
-        } catch (error) {
-            console.error(error);
-            Swal.fire('Error', 'No se pudo conectar con la base de datos', 'error');
+        });
+
+        if (resultado.isConfirmed) {
+            Swal.fire({ icon: 'success', title: 'Proceso exitoso', text: resultado.value.message, ...estilosSwal });
+            cargarTabla();
         }
     };
 
-    // 2. MODAL EXCEL
-    btnModalExcel.addEventListener('click', () => {
-        modalExcel.classList.remove('hidden');
-        modalExcel.classList.add('flex');
-    });
+    const abrirModalCargaMasiva = async () => {
+        const contenido = `
+            <div class="text-left">
+                <p class="text-xs text-gray-300 mb-4">Usa la plantilla oficial para garantizar que los cargos y tipos de sangre sean válidos. Fecha de fin de contrato puede ir vacía si es indefinido.</p>
+                <button id="btnDescargarPlantillaSwal" class="text-sm text-blue-300 underline mb-4">⬇️ Descargar Plantilla Oficial</button>
+                <input type="file" id="archivoExcelSwal" class="swal2-file" accept=".xlsx,.xls">
+            </div>
+        `;
 
-    btnCerrarExcel.addEventListener('click', () => {
-        modalExcel.classList.add('hidden');
-        modalExcel.classList.remove('flex');
-        formExcel.reset();
-    });
-
-    // 3. DESCARGAR PLANTILLA
-    if (btnDescargarPlantilla) {
-        btnDescargarPlantilla.addEventListener('click', async () => {
-            try {
-                Swal.fire({
-                    title: 'Generando...',
-                    text: 'Preparando la plantilla con los cargos actuales.',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
+        const resultado = await Swal.fire({
+            title: 'Importar personal',
+            html: contenido,
+            width: 700,
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            confirmButtonText: 'Procesar archivo',
+            ...estilosSwal,
+            didOpen: () => {
+                const botonDescarga = document.getElementById('btnDescargarPlantillaSwal');
+                botonDescarga.addEventListener('click', async () => {
+                    const descarga = await window.api.descargarPlantilla();
+                    if (descarga?.canceled) return;
+                    if (!descarga.success) {
+                        Swal.fire({ icon: 'warning', title: 'Atención', text: descarga.message, ...estilosSwal });
+                        return;
+                    }
+                    Swal.fire({ icon: 'success', title: 'Plantilla guardada', text: 'Completa el archivo y vuelve a importarlo.', ...estilosSwal });
                 });
-
-                const resultado = await window.api.descargarPlantilla();
-                
-                if (resultado.canceled) return Swal.close();
-
-                if (resultado.success) {
-                    Swal.fire({
-                        icon: 'success', title: '¡Plantilla Guardada!',
-                        text: 'Ahora puedes llenarla e importarla al sistema.',
-                        confirmButtonColor: '#FACC15', background: '#1F2937', color: '#E2E8F0'
-                    });
-                } else {
-                    Swal.fire('Atención', resultado.message, 'warning');
+            },
+            preConfirm: () => {
+                const input = document.getElementById('archivoExcelSwal');
+                if (!input.files || input.files.length === 0) {
+                    Swal.showValidationMessage('Selecciona un archivo de Excel.');
+                    return false;
                 }
-            } catch (error) {
-                console.error(error);
-                Swal.fire('Error', 'Fallo al intentar descargar la plantilla.', 'error');
+                return input.files[0].path;
             }
         });
-    }
 
-    // 4. PROCESAR EXCEL
-    formExcel.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const inputArchivo = document.getElementById('archivoExcel');
-        if (inputArchivo.files.length === 0) return;
+        if (!resultado.isConfirmed) return;
 
-        const filePath = inputArchivo.files[0].path;
+        Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...estilosSwal });
+        const importacion = await window.api.importarEmpleadosExcel(resultado.value);
+        Swal.close();
 
-        Swal.fire({
-            title: 'Procesando...',
-            text: 'Analizando e importando datos...',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
-        });
-
-        try {
-            const resultado = await window.api.importarEmpleadosExcel(filePath);
-            
-            if (resultado.success) {
-                btnCerrarExcel.click();
-                cargarTabla(); 
-
-                if (resultado.errores && resultado.errores.length > 0) {
-                    let tablaHTML = `
-                        <div class="max-h-60 overflow-y-auto mt-4 text-left text-sm">
-                            <table class="w-full border-collapse">
-                                <thead>
-                                    <tr class="bg-gray-800 text-white">
-                                        <th class="p-2 border border-gray-600">Fila</th>
-                                        <th class="p-2 border border-gray-600">Documento</th>
-                                        <th class="p-2 border border-gray-600">Motivo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
-                    
-                    resultado.errores.forEach(err => {
-                        tablaHTML += `
-                            <tr class="border-b border-gray-700">
-                                <td class="p-2 border border-gray-600 font-bold">${err.fila}</td>
-                                <td class="p-2 border border-gray-600">${err.documento}</td>
-                                <td class="p-2 border border-gray-600 text-red-400">${err.motivo}</td>
-                            </tr>
-                        `;
-                    });
-                    tablaHTML += `</tbody></table></div>`;
-
-                    Swal.fire({
-                        icon: 'warning',
-                        title: `Proceso Finalizado con Observaciones`,
-                        html: `<p>Se importaron <b>${resultado.creados}</b> empleados correctamente.</p>
-                               <p class="mt-2 text-red-400 font-bold">Se omitieron ${resultado.errores.length} filas:</p>
-                               ${tablaHTML}`,
-                        width: '600px',
-                        confirmButtonColor: '#FACC15', background: '#1F2937', color: '#E2E8F0'
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Importación Perfecta!',
-                        text: `Se importaron ${resultado.creados} empleados exitosamente sin ningún error.`,
-                        confirmButtonColor: '#FACC15', background: '#1F2937', color: '#E2E8F0'
-                    });
-                }
-            } else {
-                Swal.fire({ icon: 'error', title: 'Error de Importación', text: resultado.message, background: '#1F2937', color: '#E2E8F0' });
-            }
-        } catch (error) {
-            Swal.fire('Error', 'Fallo crítico al leer el archivo Excel', 'error');
+        if (!importacion.success) {
+            Swal.fire({ icon: 'error', title: 'Error de importación', text: importacion.message, ...estilosSwal });
+            return;
         }
-    });
+
+        await cargarTabla();
+
+        if (importacion.errores?.length > 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Importación con observaciones',
+                html: `Se importaron <b>${importacion.creados}</b> empleados. Filas omitidas: <b>${importacion.errores.length}</b>.`,
+                ...estilosSwal
+            });
+            return;
+        }
+
+        Swal.fire({ icon: 'success', title: 'Importación completa', text: `Se importaron ${importacion.creados} empleados.`, ...estilosSwal });
+    };
+
+    const cargarTabla = async () => {
+        try {
+            const respuesta = await window.api.getEmpleados();
+            if (!respuesta.success) {
+                Swal.fire({ icon: 'error', title: 'Error', text: respuesta.message, ...estilosSwal });
+                return;
+            }
+
+            empleadosCache = respuesta.data;
+            tablaEmpleados.innerHTML = '';
+
+            if (empleadosCache.length === 0) {
+                tablaEmpleados.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 italic">No hay personal registrado.</td></tr>';
+                return;
+            }
+
+            empleadosCache.forEach(emp => {
+                const nombreCompleto = `${emp.primer_apellido} ${emp.segundo_apellido} ${emp.primer_nombre} ${emp.segundo_nombre}`.replace(/\s+/g, ' ').trim();
+                const badgeActivo = emp.activo === 1
+                    ? '<span class="px-2 py-1 bg-green-900 text-green-300 rounded text-xs font-bold border border-green-700">ACTIVO</span>'
+                    : '<span class="px-2 py-1 bg-red-900 text-red-300 rounded text-xs font-bold border border-red-700">INACTIVO</span>';
+
+                const fila = `
+                    <tr class="hover:bg-gray-800 transition-colors">
+                        <td class="p-4 font-medium text-white">${emp.documento}</td>
+                        <td class="p-4">${nombreCompleto}</td>
+                        <td class="p-4 text-terminal-yellow font-medium text-xs">${emp.cargo_nombre}</td>
+                        <td class="p-4 text-center">${tipoContratoTexto(emp.fecha_fin_contrato)}</td>
+                        <td class="p-4 text-center">${badgeActivo}</td>
+                        <td class="p-4 text-center">
+                            <button class="btnEditar px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold" data-id="${emp.id}">Editar</button>
+                        </td>
+                    </tr>
+                `;
+                tablaEmpleados.insertAdjacentHTML('beforeend', fila);
+            });
+
+            document.querySelectorAll('.btnEditar').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const empleado = empleadosCache.find(item => item.id === Number(btn.dataset.id));
+                    if (empleado) abrirModalRegistro(empleado);
+                });
+            });
+        } catch (error) {
+            console.error(error);
+            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la información de empleados.', ...estilosSwal });
+        }
+    };
+
+    btnModalExcel.addEventListener('click', abrirModalCargaMasiva);
+    btnRegistroManual.addEventListener('click', () => abrirModalRegistro());
 
     cargarTabla();
 });

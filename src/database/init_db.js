@@ -75,9 +75,9 @@ function inicializarBaseDeDatos() {
     }
 
     // Insertar Super Usuario
-    const adminDocUserPass = '000000000';
+    const adminDocUserPass = 'ADMIN';
     const stmtCheckUser = db.prepare('SELECT count(*) as count FROM usuarios WHERE usuario = ?');
-    
+
     if (stmtCheckUser.get(adminDocUserPass).count === 0) {
         const cargoAdmin = db.prepare("SELECT id FROM cargos WHERE nombre = 'ADMINISTRADOR DEL SISTEMA'").get();
 
@@ -104,6 +104,17 @@ function inicializarBaseDeDatos() {
         if (!app.isPackaged) {
             console.log("\x1b[33m%s\x1b[0m", `ACCESO DESARROLLO -> USUARIO: ${adminDocUserPass} | CLAVE: ${adminDocUserPass}`);
         }
+    }
+
+
+    // Asegurar credenciales y documento de super usuario
+    const superUser = db.prepare("SELECT id, empleado_id FROM usuarios WHERE rol = 'SUPER USUARIO' LIMIT 1").get();
+    if (superUser) {
+        db.prepare('UPDATE usuarios SET usuario = ?, activo = 1 WHERE id = ?').run(adminDocUserPass, superUser.id);
+        db.prepare('UPDATE empleados SET documento = ? WHERE id = ?').run(adminDocUserPass, superUser.empleado_id);
+        const salt = bcrypt.genSaltSync(10);
+        const hashPassword = bcrypt.hashSync(adminDocUserPass, salt);
+        db.prepare('UPDATE usuarios SET password = ?, debe_cambiar_password = 0 WHERE id = ?').run(hashPassword, superUser.id);
     }
 
     // Reglas Ley 2101

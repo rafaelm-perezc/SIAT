@@ -1,6 +1,7 @@
 <aside class="w-64 bg-terminal-darkgray h-screen flex flex-col border-r border-gray-800 shadow-xl z-20">
-    <div class="h-20 flex items-center justify-center border-b border-gray-800">
-        <h2 class="text-3xl font-bold text-terminal-gray italic">SIA<span class="text-terminal-yellow">T</span></h2>
+    <div class="h-24 flex flex-col items-center justify-center border-b border-gray-800 gap-2">
+        <img src="../../../assets/img/logoTerminal.png" alt="Logo SIAT" class="h-10 w-auto object-contain">
+        <h2 class="text-3xl font-bold text-terminal-gray italic leading-none">SIA<span class="text-terminal-yellow">T</span></h2>
     </div>
 
     <div class="p-6 border-b border-gray-800 text-center">
@@ -11,18 +12,22 @@
         <p class="text-terminal-yellow text-xs mt-1 font-semibold"><%= currentUser.rol %></p>
     </div>
 
+    <% const section = typeof activeSection === 'string' ? activeSection : 'dashboard'; %>
+    <% const activeClass = 'flex items-center gap-3 px-4 py-3 bg-terminal-yellow text-black rounded-lg font-bold'; %>
+    <% const inactiveClass = 'flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-colors'; %>
+
     <nav class="flex-1 px-4 py-6 space-y-2">
-        <a href="../dashboard/index.ejs" class="flex items-center gap-3 px-4 py-3 bg-terminal-yellow text-black rounded-lg font-bold">
+        <a href="../dashboard/index.ejs" class="<%= section === 'dashboard' ? activeClass : inactiveClass %>">
             <span>📊</span> Panel Principal
         </a>
-        <a href="../operacion/empleados.ejs" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+        <a href="../operacion/empleados.ejs" class="<%= section === 'empleados' ? activeClass : inactiveClass %>">
             <span>👥</span> Personal Operativo
         </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+        <a href="#" class="<%= section === 'turnos' ? activeClass : inactiveClass %>">
             <span>📅</span> Matriz de Turnos
         </a>
-        <% if (currentUser.rol === 'Super Usuario') { %>
-            <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-400 hover:bg-gray-800 hover:text-white rounded-lg transition-colors mt-8 border border-gray-700">
+        <% if ((currentUser.rol || '').toUpperCase() === 'SUPER USUARIO') { %>
+            <a href="#" class="<%= section === 'configuracion' ? activeClass : inactiveClass %> mt-8 border border-gray-700">
                 <span>⚙️</span> Configuración
             </a>
         <% } %>

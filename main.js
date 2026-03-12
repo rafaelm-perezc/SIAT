@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const ejsElectron = require('ejs-electron');
 
@@ -23,6 +23,15 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js')
         }
     });
+
+    if (app.isPackaged) {
+        mainWindow.removeMenu();
+        mainWindow.setMenuBarVisibility(false);
+        mainWindow.autoHideMenuBar = true;
+    } else {
+        mainWindow.setMenuBarVisibility(true);
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
+    }
 
     ejsElectron.data('appVersion', app.getVersion());
     ejsElectron.data('currentUser', null); 
@@ -88,6 +97,28 @@ ipcMain.handle('empleados:get', async () => {
 
 ipcMain.handle('empleados:crear', async (event, datos) => {
     return empleadoController.crear(datos);
+});
+
+ipcMain.handle('empleados:actualizar', async (event, datos) => {
+    return empleadoController.actualizar(datos);
+});
+
+ipcMain.handle('cargos:get', async () => {
+    return empleadoController.getCargos();
+});
+
+ipcMain.handle('empleados:descargarPlantilla', async () => {
+    const resultadoDialogo = await dialog.showSaveDialog(mainWindow, {
+        title: 'Guardar plantilla de personal',
+        defaultPath: 'Plantilla_Personal_SIAT.xlsx',
+        filters: [{ name: 'Archivo Excel', extensions: ['xlsx'] }]
+    });
+
+    if (resultadoDialogo.canceled || !resultadoDialogo.filePath) {
+        return { canceled: true };
+    }
+
+    return empleadoController.generarPlantilla(resultadoDialogo.filePath);
 });
 
 ipcMain.handle('empleados:importarExcel', async (event, filePath) => {
