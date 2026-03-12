@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tablaCabecera = document.getElementById('tablaCabeceraDias');
     const tablaMatriz = document.getElementById('tablaMatriz');
     const btnCargar = document.getElementById('btnCargarMatriz');
+    const btnAutoGenerar = document.getElementById('btnAutoGenerar'); // [NUEVO]
     const inputMes = document.getElementById('filtroMes');
 
     const estilosSwal = { confirmButtonColor: '#FACC15', background: '#1F2937', color: '#E2E8F0' };
@@ -69,28 +70,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     const diaStr = String(d).padStart(2, '0');
                     const fechaCelda = `${anioSeleccionado}-${mesSeleccionado}-${diaStr}`;
                     
-                    // [EVOLUCIÓN]: Validamos si la celda cae dentro del contrato del empleado
                     let contratoValido = true;
                     if (emp.fecha_inicio_labores && fechaCelda < emp.fecha_inicio_labores) contratoValido = false;
                     if (emp.fecha_fin_contrato && fechaCelda > emp.fecha_fin_contrato) contratoValido = false;
 
                     if (!contratoValido) {
-                        // Celda bloqueada (Fuera de contrato)
                         trFila += `
                             <td class="border-r border-gray-800 bg-black/40 p-1 align-middle text-center cursor-not-allowed" title="Fuera de vigencia de contrato">
                                 <span class="text-gray-700 text-[10px] font-bold">N/A</span>
                             </td>
                         `;
                     } else {
-                        // Celda clickeable
                         let celdaHtml = `<td class="border-r border-gray-800 cursor-pointer hover:bg-gray-700 transition-all p-1 align-middle celda-dia" data-empid="${emp.id}" data-dia="${d}">`;
                         
                         if (asigEmp[d]) {
                             totalHorasMes += asigEmp[d].horas;
-                            let colorTurno = asigEmp[d].turno === 'DES' ? 'text-red-400' : 'text-terminal-yellow';
+                            let colorTurno = 'text-terminal-yellow';
+                            if (asigEmp[d].turno === 'DES') {
+                                colorTurno = 'text-red-400';
+                            } else if (['PER', 'INC', 'VAC'].includes(asigEmp[d].turno)) {
+                                colorTurno = 'text-orange-400';
+                            }
+
+                            let htmlExtras = '';
+                            const turnoInfo = filtros.turnos.find(t => t.codigo === asigEmp[d].turno);
+                            if (turnoInfo && turnoInfo.horas_extras > 0) {
+                                htmlExtras = `<span class="text-red-500 font-bold text-[8px] absolute top-0 right-0.5">+${turnoInfo.horas_extras}HE</span>`;
+                            }
+
                             celdaHtml += `
-                                <div class="flex flex-col items-center justify-center bg-gray-900 border border-gray-700 rounded py-1 px-0.5 shadow-sm" data-asigid="${asigEmp[d].id}">
-                                    <span class="font-bold ${colorTurno} text-[11px] leading-none">${asigEmp[d].turno}</span>
+                                <div class="flex flex-col items-center justify-center bg-gray-900 border border-gray-700 rounded py-1 px-0.5 shadow-sm relative" data-asigid="${asigEmp[d].id}">
+                                    ${htmlExtras}
+                                    <span class="font-bold ${colorTurno} text-[11px] leading-none mt-1">${asigEmp[d].turno}</span>
                                     <span class="text-blue-300 font-mono text-[9px] mt-0.5 leading-none">${asigEmp[d].zona}</span>
                                 </div>
                             `;
@@ -135,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const optsZonas = zonasFiltradas.map(z => `<option value="${z.id}">${z.abreviatura} - ${z.nombre}</option>`).join('');
-        const optsTurnos = filtros.turnos.map(t => `<option value="${t.id}">${t.codigo} (${t.hora_inicio} a ${t.hora_fin})</option>`).join('');
+        const optsTurnos = filtros.turnos.map(t => `<option value="${t.id}">${t.codigo} (${t.hora_inicio} a ${t.hora_fin}) ${t.horas_extras > 0 ? '[+HE]' : ''}</option>`).join('');
 
         const result = await Swal.fire({
             title: `Turno del ${diaStr}/${mesSeleccionado}`,
@@ -178,6 +189,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // [NUEVO BLOQUE]: Ejecución del Algoritmo Automático
+    const ejecutarAutoGeneracion = async () => {
+        if (!inputMes.value) {
+            Swal.fire({ icon: 'warning', title: 'Atención', text: 'Debes seleccionar un mes primero.', ...estilosSwal });
+            return;
+        }
+
+        const confirmacion = await Swal.fire({
+            title: '¿Generar programación automática?',
+            text: "El algoritmo rellenará las celdas vacías del mes respetando los contratos, descansos y reglas de jornada. Los turnos asignados previamente NO serán modificados.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#7E22CE', // Morado IA
+            cancelButtonColor: '#374151',
+            confirmButtonText: 'Sí, generar',
+            cancelButtonText: 'Cancelar',
+            ...estilosSwal
+        });
+
+        if (confirmacion.isConfirmed) {
+            Swal.fire({ 
+                title: 'Procesando heurística...', 
+                html: '<span class="text-xs text-gray-400">El algoritmo está calculando las rutas de rotación óptimas. Por favor espera.</span>',
+                allowOutsideClick: false, 
+                didOpen: () => Swal.showLoading(), 
+                ...estilosSwal 
+            });
+            
+            try {
+                [anioSeleccionado, mesSeleccionado] = inputMes.value.split('-');
+                const res = await window.api.autoGenerarProgramacion(anioSeleccionado, mesSeleccionado);
+                
+                if (res.success) {
+                    Swal.fire({ icon: 'success', title: 'Completado', text: res.message, ...estilosSwal });
+                    cargarMatriz(); // Recargamos para ver la magia
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Fallo algorítmico', text: res.message, ...estilosSwal });
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.fire({ icon: 'error', title: 'Error del sistema', text: 'El motor de turnos no respondió.', ...estilosSwal });
+            }
+        }
+    };
+
     btnCargar.addEventListener('click', cargarMatriz);
+    if(btnAutoGenerar) btnAutoGenerar.addEventListener('click', ejecutarAutoGeneracion); // [NUEVO EVENTO]
+    
     cargarFiltrosBase().then(() => cargarMatriz());
 });

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const { app } = require('electron');
 
 function inicializarBaseDeDatos() {
-    console.log("=== Sincronizando Base de Datos (Evolución: Malla y Reglas 42h) ===");
+    console.log("=== Sincronizando Base de Datos (Evolución: Horas Extras) ===");
 
     db.exec(`
         CREATE TABLE IF NOT EXISTS cargos (
@@ -52,12 +52,15 @@ function inicializarBaseDeDatos() {
             personal_requerido INTEGER DEFAULT 1
         );
 
+        -- [BLOQUE EVOLUCIONADO]: Agregamos columnas para segregar las horas ordinarias y extras
         CREATE TABLE IF NOT EXISTS turnos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             codigo TEXT UNIQUE NOT NULL,
             hora_inicio TEXT NOT NULL,
             hora_fin TEXT NOT NULL,
-            horas_totales REAL NOT NULL
+            horas_totales REAL NOT NULL,
+            horas_ordinarias REAL NOT NULL DEFAULT 0,
+            horas_extras REAL NOT NULL DEFAULT 0
         );
 
         CREATE TABLE IF NOT EXISTS reglas_jornada (
@@ -121,20 +124,28 @@ function inicializarBaseDeDatos() {
         db.prepare('UPDATE usuarios SET password = ?, debe_cambiar_password = 0 WHERE id = ?').run(bcrypt.hashSync(adminDocUserPass, salt), superUser.id);
     }
 
-    // [BLOQUE EVOLUCIONADO]: Aquí es donde el sistema sabe que el 15 de julio de 2026 cambia a 42h
     const stmtCheckReglas = db.prepare('SELECT count(*) as count FROM reglas_jornada');
     if (stmtCheckReglas.get().count === 0) {
         const stmtInsertRegla = db.prepare('INSERT INTO reglas_jornada (fecha_inicio, fecha_fin, horas_semanales, descripcion) VALUES (?, ?, ?, ?)');
         stmtInsertRegla.run('2024-07-16', '2026-07-14', 44, 'JORNADA LEY 2101 - 44H');
-        stmtInsertRegla.run('2026-07-15', null, 42, 'JORNADA LEY 2101 - 42H'); // <--- Aplicación de la regla exigida
+        stmtInsertRegla.run('2026-07-15', null, 42, 'JORNADA LEY 2101 - 42H'); 
     }
 
-    // [NUEVO BLOQUE]: Crear Zona y Turno de "Descanso" por defecto para la Malla
     const checkZonaDes = db.prepare("SELECT count(*) as count FROM zonas WHERE abreviatura = '---'").get();
     if (checkZonaDes.count === 0) db.prepare("INSERT INTO zonas (abreviatura, nombre, personal_requerido) VALUES ('---', 'DESCANSO / LIBRE', 0)").run();
 
+    // [BLOQUE EVOLUCIONADO]: Actualizamos los inserts con las nuevas columnas en 0
     const checkTurnoDes = db.prepare("SELECT count(*) as count FROM turnos WHERE codigo = 'DES'").get();
-    if (checkTurnoDes.count === 0) db.prepare("INSERT INTO turnos (codigo, hora_inicio, hora_fin, horas_totales) VALUES ('DES', '00:00', '00:00', 0)").run();
+    if (checkTurnoDes.count === 0) db.prepare("INSERT INTO turnos (codigo, hora_inicio, hora_fin, horas_totales, horas_ordinarias, horas_extras) VALUES ('DES', '00:00', '00:00', 0, 0, 0)").run();
+
+    const checkTurnoPer = db.prepare("SELECT count(*) as count FROM turnos WHERE codigo = 'PER'").get();
+    if (checkTurnoPer.count === 0) db.prepare("INSERT INTO turnos (codigo, hora_inicio, hora_fin, horas_totales, horas_ordinarias, horas_extras) VALUES ('PER', '00:00', '00:00', 0, 0, 0)").run();
+
+    const checkTurnoInc = db.prepare("SELECT count(*) as count FROM turnos WHERE codigo = 'INC'").get();
+    if (checkTurnoInc.count === 0) db.prepare("INSERT INTO turnos (codigo, hora_inicio, hora_fin, horas_totales, horas_ordinarias, horas_extras) VALUES ('INC', '00:00', '00:00', 0, 0, 0)").run();
+
+    const checkTurnoVac = db.prepare("SELECT count(*) as count FROM turnos WHERE codigo = 'VAC'").get();
+    if (checkTurnoVac.count === 0) db.prepare("INSERT INTO turnos (codigo, hora_inicio, hora_fin, horas_totales, horas_ordinarias, horas_extras) VALUES ('VAC', '00:00', '00:00', 0, 0, 0)").run();
 
     console.log("=== SIAT: Base de datos lista para operar ===");
 }

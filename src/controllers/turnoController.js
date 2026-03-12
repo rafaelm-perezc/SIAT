@@ -1,13 +1,10 @@
 const db = require('../database/db');
 
-// Función auxiliar para convertir todo a mayúsculas
 const upper = (str) => str ? String(str).toUpperCase().trim() : '';
 
 // =========================================================
-// MOTOR DE CÁLCULO DE HORAS
+// MOTOR DE CÁLCULO DE HORAS (EVOLUCIONADO)
 // =========================================================
-// Calcula la diferencia en horas entre dos cadenas "HH:MM"
-// Soporta turnos nocturnos que cruzan la medianoche (ej. 22:00 a 06:00)
 const calcularHorasTotales = (horaInicio, horaFin) => {
     const [hInicio, mInicio] = horaInicio.split(':').map(Number);
     const [hFin, mFin] = horaFin.split(':').map(Number);
@@ -15,17 +12,20 @@ const calcularHorasTotales = (horaInicio, horaFin) => {
     let inicioDecimal = hInicio + (mInicio / 60);
     let finDecimal = hFin + (mFin / 60);
 
-    // Si la hora de fin es numéricamente menor a la de inicio, significa que pasa al día siguiente
     if (finDecimal < inicioDecimal) {
-        finDecimal += 24; // Sumamos 24 horas para hacer el cálculo lineal
+        finDecimal += 24; 
     }
 
-    // Retorna la diferencia redondeada a 2 decimales (ej. 8.5 horas)
-    return parseFloat((finDecimal - inicioDecimal).toFixed(2));
+    const totales = parseFloat((finDecimal - inicioDecimal).toFixed(2));
+    
+    // Separamos las horas (Máximo 8 ordinarias, el resto son extras)
+    const ordinarias = totales > 8 ? 8 : totales;
+    const extras = totales > 8 ? parseFloat((totales - 8).toFixed(2)) : 0;
+
+    return { totales, ordinarias, extras };
 };
 
 const turnoController = {
-    // 1. Obtener todos los turnos registrados
     getAll: () => {
         try {
             const stmt = db.prepare('SELECT * FROM turnos ORDER BY hora_inicio ASC');
@@ -36,14 +36,12 @@ const turnoController = {
         }
     },
 
-    // 2. Crear un nuevo turno
     crear: (datos) => {
         try {
             const codigo = upper(datos.codigo);
             const hora_inicio = datos.hora_inicio;
             const hora_fin = datos.hora_fin;
 
-            // Validaciones de seguridad
             if (!codigo || !hora_inicio || !hora_fin) {
                 return { success: false, message: 'TODOS LOS CAMPOS SON OBLIGATORIOS' };
             }
@@ -51,11 +49,11 @@ const turnoController = {
                 return { success: false, message: 'LA HORA DE INICIO Y FIN NO PUEDEN SER IGUALES' };
             }
 
-            // Calculamos automáticamente la duración
-            const horas_totales = calcularHorasTotales(hora_inicio, hora_fin);
+            // Obtenemos los 3 valores de la nueva fórmula
+            const { totales, ordinarias, extras } = calcularHorasTotales(hora_inicio, hora_fin);
 
-            const stmt = db.prepare('INSERT INTO turnos (codigo, hora_inicio, hora_fin, horas_totales) VALUES (?, ?, ?, ?)');
-            stmt.run(codigo, hora_inicio, hora_fin, horas_totales);
+            const stmt = db.prepare('INSERT INTO turnos (codigo, hora_inicio, hora_fin, horas_totales, horas_ordinarias, horas_extras) VALUES (?, ?, ?, ?, ?, ?)');
+            stmt.run(codigo, hora_inicio, hora_fin, totales, ordinarias, extras);
             
             return { success: true, message: 'TURNO REGISTRADO EXITOSAMENTE' };
         } catch (error) {
@@ -67,7 +65,6 @@ const turnoController = {
         }
     },
 
-    // 3. Actualizar un turno existente
     actualizar: (datos) => {
         try {
             const id = Number(datos.id);
@@ -75,7 +72,6 @@ const turnoController = {
             const hora_inicio = datos.hora_inicio;
             const hora_fin = datos.hora_fin;
 
-            // Validaciones
             if (!codigo || !hora_inicio || !hora_fin) {
                 return { success: false, message: 'TODOS LOS CAMPOS SON OBLIGATORIOS' };
             }
@@ -83,11 +79,10 @@ const turnoController = {
                 return { success: false, message: 'LA HORA DE INICIO Y FIN NO PUEDEN SER IGUALES' };
             }
 
-            // Recalculamos las horas por si modificaron el horario
-            const horas_totales = calcularHorasTotales(hora_inicio, hora_fin);
+            const { totales, ordinarias, extras } = calcularHorasTotales(hora_inicio, hora_fin);
 
-            const stmt = db.prepare('UPDATE turnos SET codigo = ?, hora_inicio = ?, hora_fin = ?, horas_totales = ? WHERE id = ?');
-            const result = stmt.run(codigo, hora_inicio, hora_fin, horas_totales, id);
+            const stmt = db.prepare('UPDATE turnos SET codigo = ?, hora_inicio = ?, hora_fin = ?, horas_totales = ?, horas_ordinarias = ?, horas_extras = ? WHERE id = ?');
+            const result = stmt.run(codigo, hora_inicio, hora_fin, totales, ordinarias, extras, id);
 
             if (result.changes === 0) return { success: false, message: 'TURNO NO ENCONTRADO' };
             return { success: true, message: 'TURNO ACTUALIZADO EXITOSAMENTE' };
@@ -100,7 +95,6 @@ const turnoController = {
         }
     },
 
-    // 4. Eliminar un turno
     eliminar: (id) => {
         try {
             const stmt = db.prepare('DELETE FROM turnos WHERE id = ?');

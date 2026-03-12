@@ -25,11 +25,12 @@ contextBridge.exposeInMainWorld('api', {
     actualizarTurno: (datos) => ipcRenderer.invoke('turnos:actualizar', datos),
     eliminarTurno: (id) => ipcRenderer.invoke('turnos:eliminar', id),
 
-    // [BLOQUE EVOLUCIONADO]: Ajuste para consultar la matriz del mes
     getProgramacionFiltros: () => ipcRenderer.invoke('programacion:getFiltros'),
     getProgramacionMatriz: (anio, mes) => ipcRenderer.invoke('programacion:getMatriz', { anio, mes }),
     guardarProgramacion: (datos) => ipcRenderer.invoke('programacion:guardar', datos),
     eliminarProgramacion: (id) => ipcRenderer.invoke('programacion:eliminar', id),
+    // [NUEVO BLOQUE]: Exposición de la función Auto-Generadora
+    autoGenerarProgramacion: (anio, mes) => ipcRenderer.invoke('programacion:autoGenerar', { anio, mes }),
 
     getAllCargos: () => ipcRenderer.invoke('cargos:getAll'),
     crearCargo: (datos) => ipcRenderer.invoke('cargos:crear', datos),

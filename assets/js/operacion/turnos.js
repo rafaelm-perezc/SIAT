@@ -30,23 +30,29 @@ document.addEventListener('DOMContentLoaded', () => {
             tablaTurnos.innerHTML = '';
 
             if (turnosCache.length === 0) {
-                tablaTurnos.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-500 italic">No hay turnos registrados.</td></tr>';
+                tablaTurnos.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500 italic">No hay turnos registrados.</td></tr>';
                 return;
             }
 
             turnosCache.forEach(turno => {
-                // Formateo visual del turno
+                // Formateo visual para destacar si hay horas extras
+                const badgeExtras = turno.horas_extras > 0 
+                    ? `<span class="px-2 py-1 bg-red-900/50 border border-red-700 rounded text-red-400 font-bold">+${turno.horas_extras} h</span>`
+                    : `<span class="text-gray-600">0 h</span>`;
+
                 const fila = `
                     <tr class="hover:bg-gray-800 transition-colors">
                         <td class="p-4 text-center font-bold text-terminal-yellow text-lg">${turno.codigo}</td>
                         <td class="p-4 text-center font-mono text-white bg-gray-900/50">${turno.hora_inicio}</td>
                         <td class="p-4 text-center font-mono text-white bg-gray-900/50">${turno.hora_fin}</td>
-                        <td class="p-4 text-center">
+                        <td class="p-4 text-center border-l border-gray-800">
                             <span class="px-3 py-1 bg-green-900/50 border border-green-700 rounded-full text-green-400 font-bold">
                                 ⏱️ ${turno.horas_totales} h
                             </span>
                         </td>
-                        <td class="p-4 text-center">
+                        <td class="p-4 text-center text-white font-bold">${turno.horas_ordinarias} h</td>
+                        <td class="p-4 text-center">${badgeExtras}</td>
+                        <td class="p-4 text-center border-l border-gray-800">
                             <div class="flex justify-center gap-2">
                                 <button class="btnEditar px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold" data-id="${turno.id}">Editar</button>
                                 <button class="btnEliminar px-3 py-1 rounded bg-red-700 hover:bg-red-600 text-white text-xs font-semibold" data-id="${turno.id}" data-codigo="${turno.codigo}">X</button>
@@ -90,14 +96,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Hora Inicio <span class="text-red-500">*</span></label>
-                            <input type="time" id="turnoInicio" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none style="color-scheme: dark;"" value="${turno ? turno.hora_inicio : '06:00'}">
+                            <input type="time" id="turnoInicio" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none" style="color-scheme: dark;" value="${turno ? turno.hora_inicio : '06:00'}">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-terminal-yellow mb-1 uppercase tracking-wider">Hora Fin <span class="text-red-500">*</span></label>
-                            <input type="time" id="turnoFin" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none style="color-scheme: dark;"" value="${turno ? turno.hora_fin : '14:00'}">
+                            <input type="time" id="turnoFin" class="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:border-terminal-yellow outline-none" style="color-scheme: dark;" value="${turno ? turno.hora_fin : '14:00'}">
                         </div>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2 text-center">Las horas totales se calcularán automáticamente.</p>
+                    <p class="text-xs text-gray-500 mt-2 text-center">Las horas ordinarias y extras se calcularán automáticamente.</p>
                 </div>
             `,
             showCancelButton: true,

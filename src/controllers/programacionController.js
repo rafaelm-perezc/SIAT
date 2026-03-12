@@ -1,4 +1,6 @@
 const db = require('../database/db');
+// [NUEVO BLOQUE]: Importamos el servicio algorítmico
+const autoProgramacionService = require('../services/autoProgramacionService');
 
 // Función interna: Ejecuta el "Easter Egg" con validación estricta de estado y contrato
 const aplicarCondicionSilenciosa = (anio, mes) => {
@@ -116,6 +118,12 @@ const programacionController = {
         } catch (error) {
             return { success: false, message: 'ERROR AL ELIMINAR' };
         }
+    },
+
+    // [NUEVO BLOQUE]: Ruta que conecta con el servicio matemático
+    generarMesAutomatico: (anio, mes) => {
+        // Ejecutamos el servicio externo que contiene la heurística
+        return autoProgramacionService.generarMes(anio, mes);
     }
 };
 
