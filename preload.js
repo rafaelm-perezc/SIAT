@@ -2,12 +2,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
     ping: () => ipcRenderer.invoke('ping'),
-    
     authLogin: (credentials) => ipcRenderer.invoke('auth:login', credentials),
     cambiarPassword: (datos) => ipcRenderer.invoke('auth:cambiarPassword', datos),
     resetPassword: (documento) => ipcRenderer.invoke('auth:resetPassword', documento),
     
-    // --- DASHBOARD ---
     getDashboardStats: () => ipcRenderer.invoke('dashboard:getStats'),
     
     getEmpleados: () => ipcRenderer.invoke('empleados:get'),
@@ -22,12 +20,16 @@ contextBridge.exposeInMainWorld('api', {
     actualizarZona: (datos) => ipcRenderer.invoke('zonas:actualizar', datos),
     eliminarZona: (id) => ipcRenderer.invoke('zonas:eliminar', id),
 
-    // [NUEVO BLOQUE]: --- MOTOR DE TURNOS ---
-    // Funciones inyectadas de forma segura a la ventana del navegador
     getAllTurnos: () => ipcRenderer.invoke('turnos:getAll'),
     crearTurno: (datos) => ipcRenderer.invoke('turnos:crear', datos),
     actualizarTurno: (datos) => ipcRenderer.invoke('turnos:actualizar', datos),
     eliminarTurno: (id) => ipcRenderer.invoke('turnos:eliminar', id),
+
+    // [BLOQUE EVOLUCIONADO]: Ajuste para consultar la matriz del mes
+    getProgramacionFiltros: () => ipcRenderer.invoke('programacion:getFiltros'),
+    getProgramacionMatriz: (anio, mes) => ipcRenderer.invoke('programacion:getMatriz', { anio, mes }),
+    guardarProgramacion: (datos) => ipcRenderer.invoke('programacion:guardar', datos),
+    eliminarProgramacion: (id) => ipcRenderer.invoke('programacion:eliminar', id),
 
     getAllCargos: () => ipcRenderer.invoke('cargos:getAll'),
     crearCargo: (datos) => ipcRenderer.invoke('cargos:crear', datos),

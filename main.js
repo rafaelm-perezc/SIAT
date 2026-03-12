@@ -21,8 +21,8 @@ const cargoController = require('./src/controllers/cargoController');
 const usuarioController = require('./src/controllers/usuarioController');
 const zonaController = require('./src/controllers/zonaController'); 
 const dashboardController = require('./src/controllers/dashboardController'); 
-// [NUEVO BLOQUE]: Importación del controlador para gestionar los turnos
 const turnoController = require('./src/controllers/turnoController'); 
+const programacionController = require('./src/controllers/programacionController'); 
 
 let mainWindow;
 
@@ -133,12 +133,17 @@ ipcMain.handle('zonas:crear', async (event, datos) => zonaController.crear(datos
 ipcMain.handle('zonas:actualizar', async (event, datos) => zonaController.actualizar(datos));
 ipcMain.handle('zonas:eliminar', async (event, id) => zonaController.eliminar(id));
 
-// [NUEVO BLOQUE]: --- MOTOR DE TURNOS ---
-// Rutas de backend para el CRUD de los horarios de trabajo
+// --- MOTOR DE TURNOS ---
 ipcMain.handle('turnos:getAll', async () => turnoController.getAll());
 ipcMain.handle('turnos:crear', async (event, datos) => turnoController.crear(datos));
 ipcMain.handle('turnos:actualizar', async (event, datos) => turnoController.actualizar(datos));
 ipcMain.handle('turnos:eliminar', async (event, id) => turnoController.eliminar(id));
+
+// --- PROGRAMACIÓN Y MALLA DE TURNOS ---
+ipcMain.handle('programacion:getFiltros', async () => programacionController.getFiltros());
+ipcMain.handle('programacion:getMatriz', async (event, { anio, mes }) => programacionController.getMatrizMensual(anio, mes));
+ipcMain.handle('programacion:guardar', async (event, datos) => programacionController.guardar(datos));
+ipcMain.handle('programacion:eliminar', async (event, id) => programacionController.eliminar(id));
 
 // --- CONFIGURACIÓN: CARGOS ---
 ipcMain.handle('cargos:getAll', async () => cargoController.getAll());

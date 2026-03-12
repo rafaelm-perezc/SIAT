@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const { app } = require('electron');
 
 function inicializarBaseDeDatos() {
-    console.log("=== Sincronizando Base de Datos (Evolución: Tipo de Cargo y Zonas) ===");
+    console.log("=== Sincronizando Base de Datos (Evolución: Malla y Reglas 42h) ===");
 
     db.exec(`
         CREATE TABLE IF NOT EXISTS cargos (
@@ -67,16 +67,25 @@ function inicializarBaseDeDatos() {
             horas_semanales INTEGER NOT NULL,
             descripcion TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS programacion_turnos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            empleado_id INTEGER NOT NULL,
+            zona_id INTEGER NOT NULL,
+            turno_id INTEGER NOT NULL,
+            fecha DATE NOT NULL,
+            UNIQUE(empleado_id, fecha),
+            FOREIGN KEY (empleado_id) REFERENCES empleados (id) ON DELETE CASCADE,
+            FOREIGN KEY (zona_id) REFERENCES zonas (id) ON DELETE RESTRICT,
+            FOREIGN KEY (turno_id) REFERENCES turnos (id) ON DELETE RESTRICT
+        );
     `);
 
-    // Insertar SOLO el cargo de Administrador con su tipo
     const stmtCheckCargos = db.prepare('SELECT count(*) as count FROM cargos');
     if (stmtCheckCargos.get().count === 0) {
-        const insertCargo = db.prepare('INSERT INTO cargos (nombre, tipo) VALUES (?, ?)');
-        insertCargo.run('ADMINISTRADOR DEL SISTEMA', 'ADMINISTRATIVO');
+        db.prepare('INSERT INTO cargos (nombre, tipo) VALUES (?, ?)').run('ADMINISTRADOR DEL SISTEMA', 'ADMINISTRATIVO');
     }
 
-    // Insertar Super Usuario
     const adminDocUserPass = 'ADMIN';
     const stmtCheckUser = db.prepare('SELECT count(*) as count FROM usuarios WHERE usuario = ?');
 
@@ -102,10 +111,6 @@ function inicializarBaseDeDatos() {
         db.prepare('INSERT INTO usuarios (empleado_id, usuario, password, rol, debe_cambiar_password) VALUES (?, ?, ?, ?, ?)').run(
             infoEmpleado.lastInsertRowid, adminDocUserPass, hashPassword, 'SUPER USUARIO', 1
         );
-
-        if (!app.isPackaged) {
-            console.log("\x1b[33m%s\x1b[0m", `ACCESO DESARROLLO -> USUARIO: ${adminDocUserPass} | CLAVE: ${adminDocUserPass}`);
-        }
     }
 
     const superUser = db.prepare("SELECT id, empleado_id FROM usuarios WHERE rol = 'SUPER USUARIO' LIMIT 1").get();
@@ -113,16 +118,23 @@ function inicializarBaseDeDatos() {
         db.prepare('UPDATE usuarios SET usuario = ?, activo = 1 WHERE id = ?').run(adminDocUserPass, superUser.id);
         db.prepare('UPDATE empleados SET documento = ? WHERE id = ?').run(adminDocUserPass, superUser.empleado_id);
         const salt = bcrypt.genSaltSync(10);
-        const hashPassword = bcrypt.hashSync(adminDocUserPass, salt);
-        db.prepare('UPDATE usuarios SET password = ?, debe_cambiar_password = 0 WHERE id = ?').run(hashPassword, superUser.id);
+        db.prepare('UPDATE usuarios SET password = ?, debe_cambiar_password = 0 WHERE id = ?').run(bcrypt.hashSync(adminDocUserPass, salt), superUser.id);
     }
 
+    // [BLOQUE EVOLUCIONADO]: Aquí es donde el sistema sabe que el 15 de julio de 2026 cambia a 42h
     const stmtCheckReglas = db.prepare('SELECT count(*) as count FROM reglas_jornada');
     if (stmtCheckReglas.get().count === 0) {
         const stmtInsertRegla = db.prepare('INSERT INTO reglas_jornada (fecha_inicio, fecha_fin, horas_semanales, descripcion) VALUES (?, ?, ?, ?)');
-        stmtInsertRegla.run('2024-07-16', '2026-07-14', 44, 'JORNADA 44H');
-        stmtInsertRegla.run('2026-07-15', null, 42, 'JORNADA 42H');
+        stmtInsertRegla.run('2024-07-16', '2026-07-14', 44, 'JORNADA LEY 2101 - 44H');
+        stmtInsertRegla.run('2026-07-15', null, 42, 'JORNADA LEY 2101 - 42H'); // <--- Aplicación de la regla exigida
     }
+
+    // [NUEVO BLOQUE]: Crear Zona y Turno de "Descanso" por defecto para la Malla
+    const checkZonaDes = db.prepare("SELECT count(*) as count FROM zonas WHERE abreviatura = '---'").get();
+    if (checkZonaDes.count === 0) db.prepare("INSERT INTO zonas (abreviatura, nombre, personal_requerido) VALUES ('---', 'DESCANSO / LIBRE', 0)").run();
+
+    const checkTurnoDes = db.prepare("SELECT count(*) as count FROM turnos WHERE codigo = 'DES'").get();
+    if (checkTurnoDes.count === 0) db.prepare("INSERT INTO turnos (codigo, hora_inicio, hora_fin, horas_totales) VALUES ('DES', '00:00', '00:00', 0)").run();
 
     console.log("=== SIAT: Base de datos lista para operar ===");
 }
