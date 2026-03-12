@@ -14,14 +14,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const tipoContratoTexto = (fechaFin) => fechaFin || '<span class="italic text-gray-500">Indefinido</span>';
 
     const construirFormularioEmpleado = (cargos, empleado = {}) => {
+        // Corrección de Contraste para el Select:
         const cargoOptions = cargos
-            .map(cargo => `<option value="${cargo.id}" ${Number(empleado.cargo_id) === Number(cargo.id) ? 'selected' : ''}>${cargo.nombre}</option>`)
+            .map(cargo => `<option value="${cargo.id}" style="background-color: #1F2937; color: white;" ${Number(empleado.cargo_id) === Number(cargo.id) ? 'selected' : ''}>${cargo.nombre}</option>`)
             .join('');
 
         return `
             <div class="grid grid-cols-2 gap-3 text-left">
                 <input id="doc" class="swal2-input" placeholder="Documento" value="${empleado.documento || ''}">
-                <select id="cargo" class="swal2-select"><option value="">Cargo</option>${cargoOptions}</select>
+                <select id="cargo" class="swal2-select" style="background-color: #1F2937; color: white;">
+                    <option value="" style="background-color: #1F2937; color: gray;">Cargo</option>
+                    ${cargoOptions}
+                </select>
                 <input id="pn" class="swal2-input" placeholder="Primer nombre" value="${empleado.primer_nombre || ''}">
                 <input id="sn" class="swal2-input" placeholder="Segundo nombre" value="${empleado.segundo_nombre || ''}">
                 <input id="pa" class="swal2-input" placeholder="Primer apellido" value="${empleado.primer_apellido || ''}">
@@ -31,9 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input id="cen" class="swal2-input" placeholder="Contacto emergencia" value="${empleado.contacto_emergencia_nombre || ''}">
                 <input id="cec" class="swal2-input" placeholder="Celular emergencia" value="${empleado.contacto_emergencia_celular || ''}">
                 <input id="ts" class="swal2-input" placeholder="Tipo sangre (ej. O+)" value="${empleado.tipo_sangre || ''}">
-                <select id="activo" class="swal2-select">
-                    <option value="1" ${(empleado.activo ?? 1) === 1 ? 'selected' : ''}>Activo</option>
-                    <option value="0" ${empleado.activo === 0 ? 'selected' : ''}>Inactivo</option>
+                <select id="activo" class="swal2-select" style="background-color: #1F2937; color: white;">
+                    <option value="1" style="background-color: #1F2937; color: white;" ${(empleado.activo ?? 1) === 1 ? 'selected' : ''}>Activo</option>
+                    <option value="0" style="background-color: #1F2937; color: white;" ${empleado.activo === 0 ? 'selected' : ''}>Inactivo</option>
                 </select>
                 <label class="text-xs text-gray-300 col-span-1 mt-2">Inicio contrato</label>
                 <label class="text-xs text-gray-300 col-span-1 mt-2">Inicio labores</label>
@@ -72,14 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const abrirModalRegistro = async (empleado = null) => {
         const cargos = await window.api.getCargos();
-        if (!cargos.success || cargos.data.length === 0) {
-            Swal.fire({ icon: 'warning', title: 'Sin cargos', text: 'Debes registrar al menos un cargo para continuar.', ...estilosSwal });
-            return;
-        }
+        
+        // Se permite el ingreso para probar si aún no se crean cargos:
+        const datosCargos = cargos.success ? cargos.data : [];
 
         const resultado = await Swal.fire({
             title: empleado ? 'Actualizar empleado' : 'Registro manual de empleado',
-            html: construirFormularioEmpleado(cargos.data, empleado || {}),
+            html: construirFormularioEmpleado(datosCargos, empleado || {}),
             width: '900px',
             showCancelButton: true,
             cancelButtonText: 'Cancelar',
@@ -228,7 +231,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     btnModalExcel.addEventListener('click', abrirModalCargaMasiva);
-    btnRegistroManual.addEventListener('click', () => abrirModalRegistro());
+    
+    if(btnRegistroManual) {
+        btnRegistroManual.addEventListener('click', () => abrirModalRegistro());
+    }
 
     cargarTabla();
 });

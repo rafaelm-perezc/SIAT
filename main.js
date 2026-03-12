@@ -2,6 +2,14 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const ejsElectron = require('ejs-electron');
 
+// --- ATRAPADORES DE ERRORES GLOBALES EN TERMINAL NODE ---
+process.on('uncaughtException', (error) => {
+    console.error('\n⛔ [SIAT ERROR CRÍTICO NODE]:', error);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('\n⛔ [SIAT PROMESA RECHAZADA NODE]:', reason);
+});
+
 // Controladores y Base de Datos
 const inicializarBD = require('./src/database/init_db');
 const authController = require('./src/controllers/authController');

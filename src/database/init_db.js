@@ -25,9 +25,9 @@ function inicializarBaseDeDatos() {
             eps TEXT NOT NULL,
             tipo_sangre TEXT NOT NULL,
             cargo_id INTEGER NOT NULL,
-            fecha_inicio_contrato DATE NOT NULL, -- NUEVO
-            fecha_inicio_labores DATE NOT NULL,  -- NUEVO
-            fecha_fin_contrato DATE,             -- ACTUALIZADO: Ahora permite nulos (indefinido)
+            fecha_inicio_contrato DATE NOT NULL, 
+            fecha_inicio_labores DATE NOT NULL,  
+            fecha_fin_contrato DATE,             
             activo INTEGER DEFAULT 1,
             FOREIGN KEY (cargo_id) REFERENCES cargos (id) ON DELETE RESTRICT
         );
@@ -67,11 +67,11 @@ function inicializarBaseDeDatos() {
         );
     `);
 
-    // Insertar Cargos
+    // Insertar SOLO el cargo de Administrador para que el sistema inicie en limpio
     const stmtCheckCargos = db.prepare('SELECT count(*) as count FROM cargos');
     if (stmtCheckCargos.get().count === 0) {
         const insertCargo = db.prepare('INSERT INTO cargos (nombre) VALUES (?)');
-        ['GERENTE', 'JEFE OPERATIVO', 'SECRETARIA', 'CONDUCTOR', 'TAQUILLERO', 'AUXILIAR DE PLATAFORMA', 'ADMINISTRADOR DEL SISTEMA'].forEach(c => insertCargo.run(c));
+        insertCargo.run('ADMINISTRADOR DEL SISTEMA');
     }
 
     // Insertar Super Usuario
@@ -88,7 +88,7 @@ function inicializarBaseDeDatos() {
                 eps, tipo_sangre, cargo_id, fecha_inicio_contrato, fecha_inicio_labores, fecha_fin_contrato
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        // Fecha fin en NULL (Indefinido)
+        
         const infoEmpleado = insertEmpleado.run(
             adminDocUserPass, 'SUPER', '', 'USUARIO', '', '0000000000', 'N/A', '0000000000', 
             'N/A', 'O+', cargoAdmin.id, '2024-01-01', '2024-01-01', null
@@ -105,7 +105,6 @@ function inicializarBaseDeDatos() {
             console.log("\x1b[33m%s\x1b[0m", `ACCESO DESARROLLO -> USUARIO: ${adminDocUserPass} | CLAVE: ${adminDocUserPass}`);
         }
     }
-
 
     // Asegurar credenciales y documento de super usuario
     const superUser = db.prepare("SELECT id, empleado_id FROM usuarios WHERE rol = 'SUPER USUARIO' LIMIT 1").get();

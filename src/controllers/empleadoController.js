@@ -66,21 +66,9 @@ const empleadoController = {
 
             const stmt = db.prepare(`
                 UPDATE empleados
-                SET documento = ?,
-                    primer_nombre = ?,
-                    segundo_nombre = ?,
-                    primer_apellido = ?,
-                    segundo_apellido = ?,
-                    celular = ?,
-                    contacto_emergencia_nombre = ?,
-                    contacto_emergencia_celular = ?,
-                    eps = ?,
-                    tipo_sangre = ?,
-                    cargo_id = ?,
-                    fecha_inicio_contrato = ?,
-                    fecha_inicio_labores = ?,
-                    fecha_fin_contrato = ?,
-                    activo = ?
+                SET documento = ?, primer_nombre = ?, segundo_nombre = ?, primer_apellido = ?, segundo_apellido = ?,
+                    celular = ?, contacto_emergencia_nombre = ?, contacto_emergencia_celular = ?,
+                    eps = ?, tipo_sangre = ?, cargo_id = ?, fecha_inicio_contrato = ?, fecha_inicio_labores = ?, fecha_fin_contrato = ?, activo = ?
                 WHERE id = ?
             `);
 
@@ -92,10 +80,7 @@ const empleadoController = {
                 empleadoData.fecha_inicio_contrato, fechaLabores, fechaFin, Number(empleadoData.activo), Number(empleadoData.id)
             );
 
-            if (result.changes === 0) {
-                return { success: false, message: 'EMPLEADO NO ENCONTRADO' };
-            }
-
+            if (result.changes === 0) return { success: false, message: 'EMPLEADO NO ENCONTRADO' };
             return { success: true, message: 'EMPLEADO ACTUALIZADO EXITOSAMENTE' };
         } catch (error) {
             if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return { success: false, message: 'EL DOCUMENTO YA ESTÁ REGISTRADO' };
@@ -106,13 +91,14 @@ const empleadoController = {
 
     generarPlantilla: async (filePath) => {
         try {
-            const cargos = db.prepare('SELECT nombre FROM cargos ORDER BY nombre ASC').all();
+            const cargos = db.prepare("SELECT nombre FROM cargos WHERE nombre != 'ADMINISTRADOR DEL SISTEMA' ORDER BY nombre ASC").all();
 
             const workbook = new ExcelJS.Workbook();
             const ws = workbook.addWorksheet('Plantilla_Empleados');
             const hiddenWs = workbook.addWorksheet('DataOculta', { state: 'hidden' });
 
-            const nombresCargos = cargos.length > 0 ? cargos.map(c => c.nombre) : ['AUXILIAR OPERATIVO'];
+            // Corrección: Permite exportar aunque no haya cargos
+            const nombresCargos = cargos.length > 0 ? cargos.map(c => c.nombre) : ['AGREGA_CARGOS_EN_SISTEMA'];
             const tiposSangre = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
             hiddenWs.getColumn('A').values = nombresCargos;
