@@ -4,10 +4,11 @@ const db = require('../database/db');
 const upper = (str) => str ? String(str).toUpperCase().trim() : '';
 
 const cargoController = {
-    // 1. Obtener todos los cargos
+    // 1. Obtener todos los cargos OCULTANDO EL ADMIN
     getAll: () => {
         try {
-            const stmt = db.prepare('SELECT * FROM cargos ORDER BY nombre ASC');
+            // Filtramos para que el Administrador del Sistema no viaje a la interfaz gráfica
+            const stmt = db.prepare("SELECT * FROM cargos WHERE nombre != 'ADMINISTRADOR DEL SISTEMA' ORDER BY nombre ASC");
             return { success: true, data: stmt.all() };
         } catch (error) {
             console.error('Error en getAll cargos:', error);
@@ -30,7 +31,6 @@ const cargoController = {
             
             return { success: true, message: 'CARGO CREADO EXITOSAMENTE' };
         } catch (error) {
-            // Protección contra nombres duplicados
             if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
                 return { success: false, message: 'ESTE CARGO YA EXISTE EN EL SISTEMA' };
             }
@@ -46,7 +46,6 @@ const cargoController = {
             const nombre = upper(cargoData.nombre);
             const descripcion = cargoData.descripcion ? cargoData.descripcion.trim() : '';
 
-            // BLOQUEO DE SEGURIDAD 1: Proteger al Administrador
             const cargoActual = db.prepare('SELECT nombre FROM cargos WHERE id = ?').get(id);
             if (!cargoActual) return { success: false, message: 'CARGO NO ENCONTRADO' };
             
@@ -70,7 +69,6 @@ const cargoController = {
     // 4. Eliminar un cargo
     eliminar: (id) => {
         try {
-            // BLOQUEO DE SEGURIDAD 1: Proteger al Administrador
             const cargoActual = db.prepare('SELECT nombre FROM cargos WHERE id = ?').get(id);
             if (!cargoActual) return { success: false, message: 'CARGO NO ENCONTRADO' };
             
@@ -78,7 +76,6 @@ const cargoController = {
                 return { success: false, message: 'SEGURIDAD: NO SE PUEDE ELIMINAR EL CARGO RAÍZ DEL SISTEMA' };
             }
 
-            // BLOQUEO DE SEGURIDAD 2: Verificar si hay empleados usándolo
             const checkEmpleados = db.prepare('SELECT count(*) as count FROM empleados WHERE cargo_id = ?').get(id);
             if (checkEmpleados.count > 0) {
                 return { 

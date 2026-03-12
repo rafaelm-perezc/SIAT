@@ -2,15 +2,17 @@ const db = require('../database/db');
 const bcrypt = require('bcryptjs');
 
 const usuarioController = {
-    // 1. Obtener todos los usuarios con sus datos de empleado
+    // 1. Obtener todos los usuarios OCULTANDO EL ADMIN
     getAll: () => {
         try {
+            // Se agregó: WHERE u.usuario != 'ADMIN'
             const stmt = db.prepare(`
                 SELECT u.id, u.usuario, u.rol, u.activo, u.debe_cambiar_password,
                        e.documento, e.primer_nombre, e.primer_apellido, c.nombre as cargo_nombre
                 FROM usuarios u
                 INNER JOIN empleados e ON u.empleado_id = e.id
                 INNER JOIN cargos c ON e.cargo_id = c.id
+                WHERE u.usuario != 'ADMIN'
                 ORDER BY u.rol ASC, e.primer_nombre ASC
             `);
             return { success: true, data: stmt.all() };
@@ -37,16 +39,14 @@ const usuarioController = {
         }
     },
 
-    // 3. Crear nuevo usuario (La clave por defecto es el documento)
+    // 3. Crear nuevo usuario
     crear: (datos) => {
         try {
-            // Verificar que el empleado exista
             const empleado = db.prepare('SELECT documento FROM empleados WHERE id = ?').get(datos.empleado_id);
             if (!empleado) return { success: false, message: 'EMPLEADO NO ENCONTRADO' };
 
-            const usuarioDoc = empleado.documento; // El usuario de login será su número de documento
+            const usuarioDoc = empleado.documento; 
             
-            // Encriptar la contraseña por defecto (su mismo documento)
             const salt = bcrypt.genSaltSync(10);
             const hashPassword = bcrypt.hashSync(usuarioDoc, salt); 
 
@@ -54,7 +54,6 @@ const usuarioController = {
                 INSERT INTO usuarios (empleado_id, usuario, password, rol, debe_cambiar_password, activo)
                 VALUES (?, ?, ?, ?, 1, 1)
             `);
-            // Se inserta forzando el rol en mayúsculas y obligando a cambiar la clave en el primer inicio (1)
             stmt.run(datos.empleado_id, usuarioDoc, hashPassword, String(datos.rol).toUpperCase());
 
             return { success: true, message: `USUARIO CREADO. CREDENCIAL POR DEFECTO: ${usuarioDoc}` };
@@ -65,13 +64,12 @@ const usuarioController = {
         }
     },
 
-    // 4. Activar o Desactivar un usuario (Bloqueo de acceso)
+    // 4. Activar o Desactivar un usuario
     toggleActivo: (id) => {
         try {
             const usuario = db.prepare('SELECT usuario, activo FROM usuarios WHERE id = ?').get(id);
             if (!usuario) return { success: false, message: 'USUARIO NO ENCONTRADO' };
 
-            // BLOQUEO DE SEGURIDAD: No permitir desactivar al super usuario raíz
             if (usuario.usuario === 'ADMIN') {
                 return { success: false, message: 'SEGURIDAD: NO SE PUEDE DESACTIVAR AL ADMINISTRADOR RAÍZ' };
             }
@@ -86,17 +84,15 @@ const usuarioController = {
         }
     },
 
-    // 5. Resetear Contraseña (Forzar a que vuelva a ser su documento)
+    // 5. Resetear Contraseña
     resetPassword: (id) => {
         try {
             const usuario = db.prepare('SELECT usuario FROM usuarios WHERE id = ?').get(id);
             if (!usuario) return { success: false, message: 'USUARIO NO ENCONTRADO' };
 
-            // Encriptamos su mismo documento (usuario) como nueva clave
             const salt = bcrypt.genSaltSync(10);
             const hashPassword = bcrypt.hashSync(usuario.usuario, salt);
 
-            // Actualizamos la clave y forzamos a que deba cambiarla en el próximo inicio (1)
             db.prepare('UPDATE usuarios SET password = ?, debe_cambiar_password = 1 WHERE id = ?').run(hashPassword, id);
             
             return { success: true, message: `CLAVE RESTABLECIDA EXITOSAMENTE A SU NÚMERO DE DOCUMENTO: ${usuario.usuario}` };
