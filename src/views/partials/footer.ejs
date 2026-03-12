@@ -1,0 +1,19 @@
+<footer class="w-full bg-black border-t border-gray-800 py-3 px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 mt-auto z-50 relative shrink-0">
+    
+    <div class="flex items-center gap-2 mb-2 sm:mb-0">
+        <span class="text-terminal-yellow font-bold tracking-wider">SIAT</span>
+        <span>&copy; <script>document.write(new Date().getFullYear())</script> Sistema Inteligente de Asignación de Turnos.</span>
+        <span class="hidden sm:inline-block ml-2 pl-2 border-l border-gray-700">
+            Desarrollado por <span class="text-gray-300 font-semibold">Rafael Mauricio Pérez Campos</span>
+        </span>
+    </div>
+    
+    <div class="flex items-center gap-4">
+        <span>Versión <%= typeof appVersion !== 'undefined' ? appVersion : '1.0.0' %></span>
+        
+        <span class="flex items-center gap-2 px-2 py-1 rounded bg-gray-900 border border-gray-700">
+            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_#22c55e]"></span>
+            <span class="text-gray-300 font-medium">Sistema en línea</span>
+        </span>
+    </div>
+</footer>

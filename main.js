@@ -20,7 +20,9 @@ const empleadoController = require('./src/controllers/empleadoController');
 const cargoController = require('./src/controllers/cargoController'); 
 const usuarioController = require('./src/controllers/usuarioController');
 const zonaController = require('./src/controllers/zonaController'); 
-const dashboardController = require('./src/controllers/dashboardController'); // NUEVO IMPORT PARA DASHBOARD
+const dashboardController = require('./src/controllers/dashboardController'); 
+// [NUEVO BLOQUE]: Importación del controlador para gestionar los turnos
+const turnoController = require('./src/controllers/turnoController'); 
 
 let mainWindow;
 
@@ -130,6 +132,13 @@ ipcMain.handle('zonas:getAll', async () => zonaController.getAll());
 ipcMain.handle('zonas:crear', async (event, datos) => zonaController.crear(datos));
 ipcMain.handle('zonas:actualizar', async (event, datos) => zonaController.actualizar(datos));
 ipcMain.handle('zonas:eliminar', async (event, id) => zonaController.eliminar(id));
+
+// [NUEVO BLOQUE]: --- MOTOR DE TURNOS ---
+// Rutas de backend para el CRUD de los horarios de trabajo
+ipcMain.handle('turnos:getAll', async () => turnoController.getAll());
+ipcMain.handle('turnos:crear', async (event, datos) => turnoController.crear(datos));
+ipcMain.handle('turnos:actualizar', async (event, datos) => turnoController.actualizar(datos));
+ipcMain.handle('turnos:eliminar', async (event, id) => turnoController.eliminar(id));
 
 // --- CONFIGURACIÓN: CARGOS ---
 ipcMain.handle('cargos:getAll', async () => cargoController.getAll());

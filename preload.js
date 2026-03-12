@@ -22,6 +22,13 @@ contextBridge.exposeInMainWorld('api', {
     actualizarZona: (datos) => ipcRenderer.invoke('zonas:actualizar', datos),
     eliminarZona: (id) => ipcRenderer.invoke('zonas:eliminar', id),
 
+    // [NUEVO BLOQUE]: --- MOTOR DE TURNOS ---
+    // Funciones inyectadas de forma segura a la ventana del navegador
+    getAllTurnos: () => ipcRenderer.invoke('turnos:getAll'),
+    crearTurno: (datos) => ipcRenderer.invoke('turnos:crear', datos),
+    actualizarTurno: (datos) => ipcRenderer.invoke('turnos:actualizar', datos),
+    eliminarTurno: (id) => ipcRenderer.invoke('turnos:eliminar', id),
+
     getAllCargos: () => ipcRenderer.invoke('cargos:getAll'),
     crearCargo: (datos) => ipcRenderer.invoke('cargos:crear', datos),
     actualizarCargo: (datos) => ipcRenderer.invoke('cargos:actualizar', datos),

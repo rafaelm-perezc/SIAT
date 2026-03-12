@@ -4,7 +4,8 @@
     <title>SIAT - Dashboard</title>
     <%- include('../partials/head.ejs') %>
     <script src="../../../assets/js/app.js" defer></script>
-    <script src="../../../assets/js/dashboard/index.js" defer></script> </head>
+    <script src="../../../assets/js/dashboard/index.js" defer></script> 
+</head>
 <body class="bg-terminal-black flex h-screen overflow-hidden text-terminal-gray font-sans">
 
     <%- include('../partials/sidebar.ejs', { activeSection: 'dashboard' }) %>
@@ -33,7 +34,9 @@
                 <p class="text-gray-500 italic">Bienvenido al núcleo de generación de turnos.</p>
             </div>
         </div>
+        
+        <%- include('../partials/footer.ejs') %>
     </main>
-
+    
 </body>
 </html>

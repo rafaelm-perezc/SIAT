@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <title>SIAT - Zonas de Operación</title>
+    <title>SIAT - Catálogo de Turnos</title>
     <%- include('../partials/head.ejs') %>
     <script src="../../../assets/js/app.js" defer></script>
-    <script src="../../../assets/js/operacion/zonas.js" defer></script>
+    <script src="../../../assets/js/operacion/turnos.js" defer></script>
 </head>
 <body class="bg-terminal-black flex h-screen overflow-hidden text-terminal-gray font-sans">
     
-    <%- include('../partials/sidebar.ejs', { activeSection: 'zonas' }) %>
+    <%- include('../partials/sidebar.ejs', { activeSection: 'turnos' }) %>
     
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <%- include('../partials/header.ejs') %>
@@ -17,11 +17,11 @@
             
             <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-white">Zonas de la Terminal</h2>
-                    <p class="text-sm text-gray-400">Gestión de áreas físicas y requerimientos de personal operativo</p>
+                    <h2 class="text-2xl font-bold text-white">Catálogo Motor de Turnos</h2>
+                    <p class="text-sm text-gray-400">Definición de horarios y cálculo de jornadas operativas</p>
                 </div>
-                <button id="btnNuevaZona" class="px-5 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all shadow-lg flex items-center gap-2">
-                    <span>➕</span> Registrar Zona
+                <button id="btnNuevoTurno" class="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-500 transition-all shadow-lg flex items-center gap-2">
+                    <span>⏱️</span> Crear Turno
                 </button>
             </div>
 
@@ -29,15 +29,15 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-black text-terminal-yellow border-b border-gray-700 text-sm">
-                            <th class="p-4 font-semibold uppercase tracking-wider w-16 text-center">ID</th>
-                            <th class="p-4 font-semibold uppercase tracking-wider w-32">Abreviatura</th>
-                            <th class="p-4 font-semibold uppercase tracking-wider">Nombre de la Zona</th>
-                            <th class="p-4 font-semibold uppercase tracking-wider text-center">Personal Requerido</th>
+                            <th class="p-4 font-semibold uppercase tracking-wider text-center w-24">Código</th>
+                            <th class="p-4 font-semibold uppercase tracking-wider text-center">Hora Inicio</th>
+                            <th class="p-4 font-semibold uppercase tracking-wider text-center">Hora Fin</th>
+                            <th class="p-4 font-semibold uppercase tracking-wider text-center">Duración Calculada</th>
                             <th class="p-4 font-semibold uppercase tracking-wider text-center w-32">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="tablaZonas" class="divide-y divide-gray-800 text-sm text-gray-300">
-                        <tr><td colspan="5" class="p-8 text-center text-gray-500 italic">Cargando datos...</td></tr>
+                    <tbody id="tablaTurnos" class="divide-y divide-gray-800 text-sm text-gray-300">
+                        <tr><td colspan="5" class="p-8 text-center text-gray-500 italic">Cargando catálogo de turnos...</td></tr>
                     </tbody>
                 </table>
             </div>

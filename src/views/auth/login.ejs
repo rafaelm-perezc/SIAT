@@ -7,40 +7,43 @@
     <script src="../../../node_modules/sweetalert2/dist/sweetalert2.all.min.js"></script>
     <script src="../../../assets/js/auth/login.js" defer></script>
 </head>
-<body class="bg-terminal-black flex items-center justify-center min-h-screen">
+<body class="bg-terminal-black flex flex-col min-h-screen">
 
-    <div class="w-full max-w-md p-8 bg-terminal-darkgray rounded-2xl shadow-2xl border-b-4 border-terminal-yellow transition-all duration-300">
-        
-        <div class="text-center mb-8">
-            <img src="../../../assets/img/logoTerminal.png" alt="Logo SIAT" class="h-16 w-auto mx-auto mb-3 object-contain">
-            <h1 class="text-4xl font-bold text-terminal-gray italic">SIAT</h1>
-            <p id="formSubtitle" class="text-sm text-gray-400 mt-2 transition-colors">Sistema Inteligente de Asignación de Turnos</p>
+    <main class="flex-1 flex items-center justify-center p-4">
+        <div class="w-full max-w-md p-8 bg-terminal-darkgray rounded-2xl shadow-2xl border-b-4 border-terminal-yellow transition-all duration-300">
+            
+            <div class="text-center mb-8">
+                <img src="../../../assets/img/logoTerminal.png" alt="Logo SIAT" class="h-16 w-auto mx-auto mb-3 object-contain">
+                <h1 class="text-4xl font-bold text-terminal-gray italic">SIAT</h1>
+                <p id="formSubtitle" class="text-sm text-gray-400 mt-2 transition-colors">Sistema Inteligente de Asignación de Turnos</p>
+            </div>
+
+            <form id="loginForm" class="space-y-6 block">
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-terminal-gray">Documento de Identidad</label>
+                    <input type="text" id="usuario" required
+                        class="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:border-terminal-yellow text-white transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-terminal-gray">Contraseña</label>
+                    <input type="password" id="password" required
+                        class="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:border-terminal-yellow text-white transition-colors">
+                </div>
+
+                <button type="submit" 
+                    class="w-full py-3 bg-terminal-yellow text-black font-bold rounded-lg hover:bg-yellow-500 transition-all transform hover:scale-[1.02] active:scale-95">
+                    INGRESAR AL SISTEMA
+                </button>
+
+                <button type="button" id="btnForgotPassword" class="w-full text-sm text-gray-400 underline hover:text-terminal-yellow transition-colors">
+                    ¿Olvidaste tu contraseña?
+                </button>
+            </form>
+
         </div>
-
-        <form id="loginForm" class="space-y-6 block">
-            <div>
-                <label class="block text-sm font-medium mb-2 text-terminal-gray">Documento de Identidad</label>
-                <input type="text" id="usuario" required
-                    class="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:border-terminal-yellow text-white transition-colors">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium mb-2 text-terminal-gray">Contraseña</label>
-                <input type="password" id="password" required
-                    class="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:border-terminal-yellow text-white transition-colors">
-            </div>
-
-            <button type="submit" 
-                class="w-full py-3 bg-terminal-yellow text-black font-bold rounded-lg hover:bg-yellow-500 transition-all transform hover:scale-[1.02] active:scale-95">
-                INGRESAR AL SISTEMA
-            </button>
-
-            <button type="button" id="btnForgotPassword" class="w-full text-sm text-gray-400 underline hover:text-terminal-yellow transition-colors">
-                ¿Olvidaste tu contraseña?
-            </button>
-        </form>
-
-    </div>
-
+    </main>
+    
+    <%- include('../partials/footer.ejs') %>
 </body>
 </html>
