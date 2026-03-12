@@ -19,7 +19,13 @@
             <span>Personal operativo</span>
         </a>
 
-        <a href="../admin/settings.ejs"
+        <a href="../operacion/zonas.ejs"
+           class="flex items-center gap-3 rounded-lg px-4 py-3 transition-all <%= activeSection === 'zonas' ? 'bg-terminal-yellow text-black font-bold' : 'text-gray-300 hover:bg-gray-800' %>">
+            <span>📍</span>
+            <span>Zonas y Áreas</span>
+        </a>
+
+        <a href="../configuracion/index.ejs"
            class="flex items-center gap-3 rounded-lg px-4 py-3 transition-all <%= activeSection === 'configuracion' ? 'bg-terminal-yellow text-black font-bold' : 'text-gray-300 hover:bg-gray-800' %>">
             <span>⚙️</span>
             <span>Configuración</span>

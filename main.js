@@ -18,7 +18,8 @@ const inicializarBD = require('./src/database/init_db');
 const authController = require('./src/controllers/authController');
 const empleadoController = require('./src/controllers/empleadoController'); 
 const cargoController = require('./src/controllers/cargoController'); 
-const usuarioController = require('./src/controllers/usuarioController'); // NUEVO IMPORT
+const usuarioController = require('./src/controllers/usuarioController');
+const zonaController = require('./src/controllers/zonaController'); // NUEVO IMPORT DE ZONAS
 
 let mainWindow;
 
@@ -115,6 +116,12 @@ ipcMain.handle('empleados:descargarPlantilla', async () => {
     return empleadoController.generarPlantilla(resultadoDialogo.filePath);
 });
 ipcMain.handle('empleados:importarExcel', async (event, filePath) => empleadoController.cargarExcel(filePath));
+
+// --- ZONAS E INFRAESTRUCTURA ---
+ipcMain.handle('zonas:getAll', async () => zonaController.getAll());
+ipcMain.handle('zonas:crear', async (event, datos) => zonaController.crear(datos));
+ipcMain.handle('zonas:actualizar', async (event, datos) => zonaController.actualizar(datos));
+ipcMain.handle('zonas:eliminar', async (event, id) => zonaController.eliminar(id));
 
 // --- CONFIGURACIÓN: CARGOS ---
 ipcMain.handle('cargos:getAll', async () => cargoController.getAll());

@@ -17,13 +17,19 @@ contextBridge.exposeInMainWorld('api', {
     descargarPlantilla: () => ipcRenderer.invoke('empleados:descargarPlantilla'),
     importarEmpleadosExcel: (filePath) => ipcRenderer.invoke('empleados:importarExcel', filePath),
 
-    // --- MÓDULO 5: Configuración (CRUD Cargos) ---
+    // --- MÓDULO 5: Zonas e Infraestructura ---
+    getAllZonas: () => ipcRenderer.invoke('zonas:getAll'),
+    crearZona: (datos) => ipcRenderer.invoke('zonas:crear', datos),
+    actualizarZona: (datos) => ipcRenderer.invoke('zonas:actualizar', datos),
+    eliminarZona: (id) => ipcRenderer.invoke('zonas:eliminar', id),
+
+    // --- MÓDULO 6: Configuración (CRUD Cargos) ---
     getAllCargos: () => ipcRenderer.invoke('cargos:getAll'),
     crearCargo: (datos) => ipcRenderer.invoke('cargos:crear', datos),
     actualizarCargo: (datos) => ipcRenderer.invoke('cargos:actualizar', datos),
     eliminarCargo: (id) => ipcRenderer.invoke('cargos:eliminar', id),
 
-    // --- MÓDULO 5: Configuración (CRUD Usuarios) ---
+    // --- MÓDULO 6: Configuración (CRUD Usuarios) ---
     getAllUsuarios: () => ipcRenderer.invoke('usuarios:getAll'),
     getEmpleadosSinUsuario: () => ipcRenderer.invoke('usuarios:getSinUsuario'),
     crearUsuario: (datos) => ipcRenderer.invoke('usuarios:crear', datos),
